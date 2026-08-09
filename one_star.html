@@ -1,0 +1,3812 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <meta name="theme-color" content="#080a0a" />
+
+    <title>ONE STAR — Classic Low-Poly Escape</title>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap");
+
+      :root {
+        --ink: #d8d2c4;
+        --dim: #8e8a80;
+        --bg: #080a0a;
+        --panel: #111413;
+        --line: #3b403a;
+        --accent: #c58b45;
+        --good: #7d9a72;
+        --bad: #a95848;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Share Tech Mono", monospace;
+      }
+
+      body {
+        touch-action: none;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      #game {
+        position: fixed;
+        inset: 0;
+      }
+
+      #ui {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #title {
+        position: absolute;
+        top: 24px;
+        left: 28px;
+        font: 700 28px Rajdhani;
+        letter-spacing: 0.22em;
+        color: #e4ded1;
+      }
+
+      #sub {
+        position: absolute;
+        top: 58px;
+        left: 30px;
+        color: #817e75;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+      }
+
+      #status {
+        position: absolute;
+        top: 24px;
+        right: 28px;
+        text-align: right;
+        font-size: 11px;
+        line-height: 1.8;
+      }
+
+      #timer {
+        font: 700 27px Rajdhani;
+        letter-spacing: 0.1em;
+      }
+
+      #role {
+        color: var(--accent);
+        font-weight: bold;
+      }
+
+      #connectionStatus {
+        color: #777b74;
+        font-size: 10px;
+      }
+
+      #reticle {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 8px;
+        height: 8px;
+        margin: -4px;
+        border: 1px solid rgba(220, 210, 190, 0.75);
+        transform: rotate(45deg);
+      }
+
+      #prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 16%;
+        transform: translateX(-50%);
+        padding: 8px 12px;
+        background: rgba(10, 12, 11, 0.82);
+        border-left: 3px solid var(--accent);
+        font-size: 11px;
+        opacity: 0;
+        transition: opacity 0.12s;
+      }
+
+      #prompt.show {
+        opacity: 1;
+      }
+
+      #note {
+        position: absolute;
+        left: 28px;
+        bottom: 26px;
+        max-width: 390px;
+        color: #a8a398;
+        font-size: 10px;
+        line-height: 1.55;
+      }
+
+      #toast {
+        position: absolute;
+        left: 50%;
+        top: 78px;
+        transform: translateX(-50%);
+        padding: 9px 14px;
+        background: #171a17;
+        border: 1px solid #45483f;
+        color: #ddd5c5;
+        opacity: 0;
+        transition: opacity 0.12s;
+        z-index: 500;
+      }
+
+      #toast.on {
+        opacity: 1;
+      }
+
+      #clue {
+        position: absolute;
+        right: 28px;
+        bottom: 26px;
+        width: 340px;
+        max-height: 55vh;
+        overflow: auto;
+        background: rgba(12, 14, 13, 0.9);
+        border-top: 2px solid var(--accent);
+        padding: 14px;
+        display: none;
+        pointer-events: auto;
+      }
+
+      #clue b {
+        font-family: Rajdhani;
+        font-size: 16px;
+        color: #ddd4c2;
+      }
+
+      .small {
+        font-size: 10px;
+        color: #928e83;
+        line-height: 1.55;
+        margin-top: 7px;
+      }
+
+      #panel {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(5, 7, 7, 0.86);
+        pointer-events: auto;
+        z-index: 100;
+      }
+
+      .window {
+        width: min(760px, 94vw);
+        max-height: 92vh;
+        overflow: auto;
+        padding: 34px 38px;
+        background: #111413;
+        border: 1px solid #3b403a;
+        box-shadow: 0 18px 80px #000;
+      }
+
+      h1,
+      h2 {
+        font-family: Rajdhani;
+        margin: 0 0 10px;
+        letter-spacing: 0.08em;
+      }
+
+      h1 {
+        font-size: 46px;
+      }
+
+      h2 {
+        font-size: 26px;
+      }
+
+      p {
+        color: #aaa69b;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+
+      button {
+        color: #ded7c8;
+        background: #1a1d1a;
+        border: 1px solid #454a43;
+        padding: 13px 18px;
+        font: 600 12px Rajdhani;
+        letter-spacing: 0.12em;
+      }
+
+      button:hover,
+      button:focus {
+        background: #252a24;
+        border-color: var(--accent);
+        outline: none;
+      }
+
+      button.primary {
+        background: #4a3824;
+        border-color: #8f6737;
+      }
+
+      select,
+      input[type="text"] {
+        font: 12px "Share Tech Mono";
+        background: #101211;
+        color: #ddd8cb;
+        border: 1px solid #41463f;
+        padding: 11px;
+      }
+
+      .codeBox {
+        margin-top: 18px;
+        padding: 18px;
+        background: #0b0e0d;
+        border: 1px solid #3a4039;
+      }
+
+      .codeLabel {
+        font: 600 13px Rajdhani;
+        letter-spacing: 0.08em;
+      }
+
+      #hostCode,
+      #phoneHostCode {
+        display: block;
+        margin-top: 4px;
+        font: 700 38px Rajdhani;
+        letter-spacing: 0.25em;
+        color: var(--accent);
+      }
+
+      .codeGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .codeCard {
+        padding: 14px;
+        background: #0b0e0d;
+        border: 1px solid #3a4039;
+      }
+
+      .codeCard .codeLabel {
+        font-size: 11px;
+      }
+
+      .codeCard .codeValue {
+        display: block;
+        margin-top: 6px;
+        font: 700 30px Rajdhani;
+        letter-spacing: 0.2em;
+        color: var(--accent);
+      }
+
+      .joinBox {
+        margin-top: 18px;
+        padding: 18px;
+        background: #0d100f;
+        border: 1px solid #3a4039;
+      }
+
+      .joinBox input {
+        width: 190px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        text-align: center;
+      }
+
+      @media (max-width: 700px) {
+        .codeGrid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .remoteRoleLabel {
+        font: 700 11px Rajdhani;
+        letter-spacing: 0.12em;
+        color: #e4ded1;
+        text-shadow: 0 2px 5px #000;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      #hostConnectionText {
+        color: #8e8a80;
+        font-size: 10px;
+        margin-top: 8px;
+      }
+
+      .phoneBox {
+        margin-top: 20px;
+        padding: 18px;
+        background: #0d100f;
+        border: 1px solid #3a4039;
+      }
+
+      .phoneBox input {
+        width: 190px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        text-align: center;
+      }
+
+      #networkHelp {
+        margin-top: 14px;
+        padding: 12px;
+        background: #0b0d0c;
+        border-left: 2px solid #5c624f;
+        color: #858177;
+        font-size: 10px;
+        line-height: 1.6;
+      }
+
+      #cinematicOverlay {
+        position: fixed;
+        inset: 0;
+        background: #000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 900;
+        pointer-events: none;
+      }
+
+      #cinematicText {
+        font-family: Rajdhani;
+        font-size: 28px;
+        color: #e4ded1;
+        text-align: center;
+        max-width: 82%;
+        letter-spacing: 0.1em;
+        line-height: 1.4;
+      }
+
+      #phoneClient {
+        position: fixed;
+        inset: 0;
+        background: #050707;
+        z-index: 2000;
+        display: none;
+        color: #ddd7ca;
+      }
+
+      #phoneCanvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #phoneHUD {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #phoneCodeStatus {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.58);
+        font-size: 10px;
+      }
+
+      #gamepadStatus {
+        position: absolute;
+        left: 50%;
+        bottom: 9px;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: #858980;
+        white-space: nowrap;
+      }
+
+      #phoneControls {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #stickZone {
+        position: absolute;
+        left: 22px;
+        bottom: 28px;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.04);
+        pointer-events: auto;
+      }
+
+      #stick {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 60px;
+        height: 60px;
+        margin: -30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+      }
+
+      .phoneButtons {
+        position: absolute;
+        right: 24px;
+        bottom: 28px;
+        width: 180px;
+        height: 150px;
+        pointer-events: none;
+      }
+
+      .phoneButton {
+        position: absolute;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        padding: 0;
+        font: 700 16px Rajdhani;
+        pointer-events: auto;
+      }
+
+      #phoneB1 {
+        right: 0;
+        top: 45px;
+      }
+
+      #phoneB2 {
+        right: 60px;
+        top: 0;
+      }
+
+      #phoneB3 {
+        right: 120px;
+        top: 45px;
+      }
+
+      #phoneB4 {
+        right: 60px;
+        top: 90px;
+      }
+
+      #xrButton {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 20;
+      }
+
+      #xrButton button {
+        padding: 18px 28px;
+        font-size: 16px;
+      }
+
+      #phoneHelpPanel {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      #phoneHelpText {
+        max-width: 90%;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.68);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        text-align: center;
+        font-size: 10px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 700px) {
+        #title {
+          top: 14px;
+          left: 14px;
+          font-size: 22px;
+        }
+
+        #sub {
+          top: 42px;
+          left: 15px;
+          font-size: 8px;
+        }
+
+        #status {
+          top: 12px;
+          right: 14px;
+        }
+
+        #note {
+          display: none;
+        }
+
+        .window {
+          padding: 25px;
+        }
+
+        h1 {
+          font-size: 36px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="game"></div>
+
+    <div id="ui">
+      <div id="title">ONE STAR</div>
+
+      <div id="sub">A LOW-POLY COOPERATIVE ESCAPE / 10 MINUTES</div>
+
+      <div id="status">
+        <div id="timer">10:00</div>
+        <div id="role">UNASSIGNED</div>
+        <div id="mode">DESKTOP</div>
+        <div id="connectionStatus">LOCAL HOST</div>
+      </div>
+
+      <div id="reticle"></div>
+
+      <div id="prompt"></div>
+
+      <div id="toast"></div>
+
+      <div id="note">
+        THE STRONGEST CONSTELLATIONS BEGIN WITH A SINGLE STAR.
+        <br /><br />
+        <kbd>WASD</kbd> MOVE · <kbd>MOUSE</kbd>/<kbd>ARROWS</kbd> LOOK · <kbd>E</kbd> INTERACT ·
+        <kbd>F</kbd> ROLE BRIEF · <kbd>V</kbd> VR
+      </div>
+
+      <div id="clue">
+        <b id="clueTitle">ROLE BRIEF</b>
+        <div id="clueText" class="small"></div>
+      </div>
+
+      <div id="panel">
+        <div class="window" id="menu">
+          <h1>ONE STAR</h1>
+
+          <p>
+            Four specialists. One sealed observatory. Ten minutes before
+            catastrophic star collapse. Solve the station puzzles and activate
+            the reserve star.
+          </p>
+
+          <!-- Roles are assigned randomly when multiplayer starts. Solo mode uses all roles. -->
+          <div
+            style="
+              margin-top: 12px;
+              display: flex;
+              gap: 12px;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <label style="font: 600 13px Rajdhani">MODE</label>
+
+            <select id="modeSelect">
+              <option>Desktop</option>
+              <option>VR</option>
+            </select>
+          </div>
+
+          <div class="buttons">
+            <button class="primary" id="start">START SOLO</button>
+
+            <button id="host">HOST MULTIPLAYER</button>
+
+            <button id="startMultiplayer">START MULTIPLAYER</button>
+          </div>
+
+          <!-- TWO HOST CODES ARE GENERATED AS SOON AS THE PAGE OPENS -->
+          <div class="codeGrid">
+            <div class="codeCard">
+              <div class="codeLabel">MULTIPLAYER CODE — GIVE THIS TO FRIENDS</div>
+              <span id="hostCode" class="codeValue">------</span>
+              <div id="multiplayerHostText" class="small">
+                Preparing multiplayer room...
+              </div>
+            </div>
+
+            <div class="codeCard">
+              <div class="codeLabel">PHONE VR CODE — USE THIS ON YOUR PHONE</div>
+              <span id="phoneHostCode" class="codeValue">------</span>
+              <div id="phoneHostText" class="small">
+                Preparing phone VR room...
+              </div>
+            </div>
+          </div>
+
+          <!-- MULTIPLAYER JOIN AREA -->
+          <div class="joinBox">
+            <div style="font: 600 13px Rajdhani; margin-bottom: 10px">
+              JOIN MULTIPLAYER
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <input
+                type="text"
+                id="multiplayerCodeInput"
+                maxlength="6"
+                placeholder="FRIEND CODE"
+                autocomplete="off"
+                inputmode="text"
+                spellcheck="false"
+              />
+
+              <button id="joinMultiplayer">JOIN MULTIPLAYER</button>
+            </div>
+
+            <p style="font-size: 10px; margin-bottom: 0">
+              Enter the six-character MULTIPLAYER CODE provided by the host.
+            </p>
+          </div>
+
+          <!-- PHONE VR JOIN AREA -->
+          <div class="phoneBox">
+            <div style="font: 600 13px Rajdhani; margin-bottom: 10px">
+              JOIN PHONE VR
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <input
+                type="text"
+                id="phoneCodeInput"
+                maxlength="6"
+                placeholder="PHONE CODE"
+                autocomplete="off"
+                inputmode="text"
+                spellcheck="false"
+              />
+
+              <button id="joinPhone">JOIN PHONE VR</button>
+            </div>
+
+            <p style="font-size: 10px; margin-bottom: 0">
+              Open this same HTML page on the phone and enter the PHONE VR CODE
+              shown on the host computer.
+            </p>
+          </div>
+
+          <div id="waitingRoom" class="joinBox" style="display:none; border-color:#8b8068; margin-top:12px;">
+            <div style="font:700 14px Rajdhani; margin-bottom:8px">MULTIPLAYER WAITING ROOM</div>
+            <div id="waitingRoomStatus" class="small">WAITING FOR HOST TO START...</div>
+            <div id="waitingRoomPlayers" class="small" style="margin-top:8px; line-height:1.7"></div>
+            <div id="waitingRoomHint" class="small" style="margin-top:8px">The host will randomly assign every player a specialist role when START MULTIPLAYER is pressed.</div>
+          </div>
+
+          <div id="networkHelp">
+            <b>MULTIPLAYER:</b>
+            Give friends the MULTIPLAYER CODE. They enter it above to join the
+            same escape-room session.
+            <br /><br />
+            <b>PHONE VR:</b>
+            Enter the separate PHONE VR CODE on the phone. The phone controls
+            the host player's view and movement.
+            <br /><br />
+            <b>WEBXR:</b>
+            WebXR normally requires HTTPS or localhost. If the phone browser
+            does not support immersive WebXR, the page automatically provides a
+            device-orientation VR/display fallback.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cinematicOverlay">
+      <div id="cinematicText"></div>
+    </div>
+
+    <!-- PHONE CLIENT -->
+
+    <div id="phoneClient">
+      <canvas id="phoneCanvas"></canvas>
+
+      <div id="phoneHUD">
+        <div id="phoneCodeStatus">DISCONNECTED</div>
+
+        <div id="gamepadStatus">BLUETOOTH CONTROLLER: SEARCHING...</div>
+      </div>
+
+      <div id="xrButton"></div>
+
+      <div id="phoneHelpPanel">
+        <div id="phoneHelpText"></div>
+      </div>
+
+      <div id="phoneControls">
+        <div id="stickZone">
+          <div id="stick"></div>
+        </div>
+
+        <div class="phoneButtons">
+          <button class="phoneButton" id="phoneB1">A</button>
+
+          <button class="phoneButton" id="phoneB2">B</button>
+
+          <button class="phoneButton" id="phoneB3">X</button>
+
+          <button class="phoneButton" id="phoneB4">Y</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <script type="module">
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+
+      (() => {
+        "use strict";
+
+        /* =========================================================
+   HELPERS
+========================================================= */
+
+        const $ = (id) => document.getElementById(id);
+
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+        const roles = ["Engineer", "Scientist", "Explorer", "Navigator"];
+
+        const suits = {
+          Engineer: 0xb65f2e,
+          Scientist: 0xd8d5cb,
+          Explorer: 0x416b62,
+          Navigator: 0x657b45,
+          ALL: 0xc58b45,
+        };
+
+        const roleData = {
+          Engineer: {
+            title: "ENGINEER — POWER MULTIMETER",
+
+            clue:
+              "Conduits A, B, C, D. " +
+              "Log: Power enters amber conduit, then the conduit " +
+              "whose number is twice it, then the only prime, then " +
+              "the remaining line. A=1, B=2, C=3, D=4. " +
+              "Amber conduit is B.",
+
+            task: "Set the conduit power sequence: B D C A.",
+          },
+
+          Scientist: {
+            title: "SCIENTIST — SPECTRAL SCANNER",
+
+            clue:
+              "Spectral note: Star awakens only when three stable " +
+              "readings align. Ignore red anomaly. Readings: " +
+              "HELIUM 7, IRON 2, HYDROGEN 9, OXYGEN 4. " +
+              "Stable: HYDROGEN, OXYGEN, IRON.",
+
+            task: "Enter stable spectral order: 942.",
+          },
+
+          Explorer: {
+            title: "EXPLORER — TERRAIN SURVEY DECK",
+
+            clue:
+              "Wall survey shows: crescent, triangle, square, hexagon. " +
+              "Journal: Path starts where moon cuts sky; next shape " +
+              "with three corners; then four; last is many-sided seal.",
+
+            task:
+              "Step on pressure plates: " +
+              "CRESCENT → TRIANGLE → SQUARE → HEXAGON.",
+          },
+
+          Navigator: {
+            title: "NAVIGATOR — ASTRO-COMPASS",
+
+            clue:
+              "Star chart upside down. Emergency route: " +
+              "NORTH → EAST → SOUTH → WEST.",
+
+            task: "Enter emergency route: NESW.",
+          },
+        };
+
+        /* =========================================================
+   GAME STATE
+========================================================= */
+
+        let scene;
+        let camera;
+        let renderer;
+        let clock;
+
+        let player;
+
+        let world = [];
+        let interactive = [];
+
+        let role = "ALL";
+        let mode = "Desktop";
+
+        let running = false;
+        let remaining = 600;
+
+        let lastFrame = performance.now();
+
+        let mouseLocked = false;
+
+        let yaw = 0;
+        let pitch = 0;
+
+        let keys = {};
+
+        let near = null;
+
+        let clueOpen = false;
+
+        let isSolo = true;
+
+        let tasks = {
+          Engineer: false,
+          Scientist: false,
+          Explorer: false,
+          Navigator: false,
+        };
+
+        let puzzle = {
+          engineer: [],
+          scientist: "",
+          explorer: [],
+          navigator: "",
+        };
+
+        let doorLockMesh = null;
+        let doorMesh = null;
+        let leverMesh = null;
+
+        /* =========================================================
+   NETWORK STATE
+========================================================= */
+
+        let multiplayerPeer = null;
+        let phonePeer = null;
+
+        let hostConnections = [];
+        let hostConnection = null;
+        let multiplayerStarted = false;
+        // Shared timer used to synchronize the host and all multiplayer clients.
+        let multiplayerStartTimer = null;
+        let multiplayerHostRole = null;
+        let multiplayerPlayerCounter = 0;
+        const remoteAvatars = new Map();
+        let remoteAvatarGroup = null;
+        let lastRemoteBroadcast = 0;
+        const multiplayerRoles = ["Engineer", "Scientist", "Explorer", "Navigator"];
+        let phoneConnection = null;
+
+        let isPhoneClient = false;
+        let isMultiplayerClient = false;
+
+        let multiplayerCode = "";
+        let phoneRoomCode = "";
+        let roomCode = "";
+
+        let phoneConnected = false;
+
+        let networkInput = {
+          w: false,
+          a: false,
+          s: false,
+          d: false,
+          sprint: false,
+          yaw: 0,
+          pitch: 0,
+        };
+
+        let lastStateSend = 0;
+
+        /* =========================================================
+   PHONE STATE
+========================================================= */
+
+        let phoneScene = null;
+        let phoneCamera = null;
+        let phoneRenderer = null;
+
+        let xrSession = null;
+
+        let phonePosition = new THREE.Vector3(0, 1.65, 5);
+
+        let phoneYaw = 0;
+        let phonePitch = 0;
+
+        let phoneOrientationEnabled = false;
+
+        let phoneStick = {
+          x: 0,
+          y: 0,
+        };
+
+        let phoneButtons = {
+          A: false,
+          B: false,
+          X: false,
+          Y: false,
+        };
+
+        let gamepad = null;
+
+        let phoneWorld = [];
+
+        /* =========================================================
+   MATERIAL
+========================================================= */
+
+        function makeMat(color, roughness = 0.7, metalness = 0.2) {
+          return new THREE.MeshStandardMaterial({
+            color,
+
+            roughness,
+
+            metalness,
+
+            flatShading: true,
+          });
+        }
+
+        /* =========================================================
+   ROOM
+========================================================= */
+
+        function buildRoom() {
+          world.forEach((o) => scene.remove(o));
+
+          world = [];
+
+          interactive = [];
+
+          const floor = new THREE.Mesh(
+            new THREE.CylinderGeometry(11, 11, 0.4, 16),
+            makeMat(0x181c1a),
+          );
+
+          floor.position.y = -0.2;
+
+          floor.receiveShadow = true;
+
+          scene.add(floor);
+
+          world.push(floor);
+
+          const ceiling = new THREE.Mesh(
+            new THREE.CylinderGeometry(11, 11, 0.4, 16),
+            makeMat(0x0d1010),
+          );
+
+          ceiling.position.y = 5.2;
+
+          scene.add(ceiling);
+
+          world.push(ceiling);
+
+          const wallGeom = new THREE.BoxGeometry(8.4, 5, 0.4, 2, 2, 1);
+
+          for (let i = 0; i < 8; i++) {
+            if (i === 4) continue;
+
+            const angle = (i / 8) * Math.PI * 2;
+
+            const wall = new THREE.Mesh(wallGeom, makeMat(0x202523));
+
+            wall.position.set(
+              Math.sin(angle) * 10.2,
+              2.3,
+              Math.cos(angle) * 10.2,
+            );
+
+            wall.rotation.y = angle + Math.PI;
+
+            wall.receiveShadow = true;
+
+            scene.add(wall);
+
+            world.push(wall);
+          }
+
+          const doorFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(9, 5, 0.8, 2, 2, 1),
+            makeMat(0x161918),
+          );
+
+          doorFrame.position.set(0, 2.3, -10.2);
+
+          scene.add(doorFrame);
+
+          world.push(doorFrame);
+
+          doorMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(4.2, 4.4, 0.3, 3, 3, 1),
+            makeMat(0x0b0d0c),
+          );
+
+          doorMesh.position.set(0, 2.2, -10.1);
+
+          scene.add(doorMesh);
+
+          world.push(doorMesh);
+
+          doorLockMesh = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.6, 0),
+            makeMat(0xc58b45, 0.3, 0.8),
+          );
+
+          doorLockMesh.position.set(0, 2.2, -9.9);
+
+          scene.add(doorLockMesh);
+
+          world.push(doorLockMesh);
+
+          const leverBase = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 1.4, 0.6, 2, 2, 1),
+            makeMat(0x282c2a),
+          );
+
+          leverBase.position.set(0, 1.2, -12.5);
+
+          scene.add(leverBase);
+
+          world.push(leverBase);
+
+          leverMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.08, 0.08, 1.4, 8),
+            makeMat(0xc58b45, 0.2, 0.9),
+          );
+
+          leverMesh.position.set(0, 2, -12.5);
+
+          leverMesh.rotation.z = -0.6;
+
+          leverMesh.userData = {
+            kind: "lever",
+          };
+
+          scene.add(leverMesh);
+
+          world.push(leverMesh);
+
+          interactive.push(leverMesh);
+
+          textSprite("PRIMARY CONDUIT RELEASE", [0, 2.8, -12.5], 0.45);
+
+          const core = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.6, 2, 1.4, 12),
+            makeMat(0x2b302d),
+          );
+
+          core.position.set(0, 0.7, -1.2);
+
+          scene.add(core);
+
+          world.push(core);
+
+          textSprite("CENTRAL POWER CORE", [0, 1.7, -1.2], 0.45);
+
+          buildStation("ENGINEERING", -5.5, 0, 0xb65f2e, "Engineer");
+
+          buildStation("SPECTRAL LAB", 5.5, 0, 0xd8d5cb, "Scientist");
+
+          buildStation("SURVEY DECK", -5.5, 5, 0x416b62, "Explorer");
+
+          buildStation("NAVIGATION", 5.5, 5, 0x657b45, "Navigator");
+
+          const shapes = [
+            ["crescent", -3, 3, 12],
+            ["triangle", -1, 3, 3],
+            ["square", 1, 3, 4],
+            ["hexagon", 3, 3, 6],
+          ];
+
+          shapes.forEach(([shape, x, z, segments], index) => {
+            const plate = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.7, 0.75, 0.12, segments),
+              makeMat(0x444842),
+            );
+
+            plate.position.set(x, 0.06, z);
+
+            plate.userData = {
+              kind: "plate",
+              shape,
+              index,
+            };
+
+            scene.add(plate);
+
+            world.push(plate);
+
+            interactive.push(plate);
+          });
+        }
+
+        function handleRemoteInteraction(target, actingRole = "ALL") {
+          if (!running || !target) return;
+
+          if (target.kind === "station" && target.role) {
+            openStation(target.role, actingRole);
+            return;
+          }
+
+          if (target.kind === "plate" && target.shape) {
+            stepPlate(target.shape, actingRole);
+            return;
+          }
+
+          if (target.kind === "lever") {
+            pullLever();
+          }
+        }
+
+        /* =========================================================
+   STATION
+========================================================= */
+
+        function buildStation(label, x, z, color, stationRole) {
+          const base = new THREE.Mesh(
+            new THREE.BoxGeometry(2.4, 1.2, 1.6, 2, 2, 1),
+            makeMat(0x2a2e2b),
+          );
+
+          base.position.set(x, 0.6, z);
+
+          scene.add(base);
+
+          world.push(base);
+
+          const panel = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 1, 0.15, 2, 2, 1),
+            makeMat(color, 0.4, 0.5),
+          );
+
+          panel.position.set(x, 1.45, z - 0.8);
+
+          panel.userData = {
+            kind: "station",
+            role: stationRole,
+          };
+
+          scene.add(panel);
+
+          world.push(panel);
+
+          interactive.push(panel);
+
+          textSprite(label, [x, 2.35, z], 0.35);
+        }
+
+        /* =========================================================
+   PLAYER
+========================================================= */
+
+        function addLimb(group, material, x, y, z, sx, sy, sz, rotX = 0, rotZ = 0) {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), material);
+          mesh.position.set(x, y, z);
+          mesh.rotation.x = rotX;
+          mesh.rotation.z = rotZ;
+          group.add(mesh);
+          return mesh;
+        }
+
+        function addLowPolyHead(group, skin, hair = null, glasses = false) {
+          const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.34, 1), skin);
+          head.position.set(0, 0.18, -0.03);
+          group.add(head);
+
+          if (hair) {
+            const hairMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.36, 1), hair);
+            hairMesh.scale.set(1.02, 0.82, 1.02);
+            hairMesh.position.set(0, 0.27, -0.01);
+            group.add(hairMesh);
+          }
+
+          if (glasses) {
+            const frame = makeMat(0x171717, 0.3, 0.7);
+            const lens = makeMat(0x7c9da8, 0.12, 0.65);
+            [-0.13, 0.13].forEach((x) => {
+              const l = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.035), lens);
+              l.position.set(x, 0.2, -0.32);
+              group.add(l);
+              const f = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.15, 0.025), frame);
+              f.position.set(x, 0.2, -0.335);
+              group.add(f);
+            });
+            const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.025, 0.025), frame);
+            bridge.position.set(0, 0.2, -0.345);
+            group.add(bridge);
+          }
+        }
+
+        function createRoleAvatar(avatarRole) {
+          const g = new THREE.Group();
+          const skin = makeMat(0xc98f6b, 0.8, 0.05);
+          const dark = makeMat(0x1a1c1b, 0.7, 0.1);
+          const boot = makeMat(0x2b1c15, 0.8, 0.05);
+
+          let torsoMat;
+          if (avatarRole === "Engineer") {
+            torsoMat = makeMat(0xd56f25, 0.6, 0.15);
+            addLimb(g, torsoMat, 0, 1.05, 0, 0.72, 0.9, 0.42);
+            addLimb(g, torsoMat, -0.52, 1.03, 0, 0.18, 0.75, 0.18, 0, -0.08);
+            addLimb(g, torsoMat, 0.52, 1.03, 0, 0.18, 0.75, 0.18, 0, 0.08);
+            addLimb(g, dark, -0.22, 0.42, 0, 0.22, 0.72, 0.24);
+            addLimb(g, dark, 0.22, 0.42, 0, 0.22, 0.72, 0.24);
+            addLimb(g, boot, -0.22, 0.02, -0.04, 0.28, 0.22, 0.42);
+            addLimb(g, boot, 0.22, 0.02, -0.04, 0.28, 0.22, 0.42);
+            const helmet = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, 1), makeMat(0xe1ddd0, 0.25, 0.65));
+            helmet.position.set(0, 1.72, 0);
+            g.add(helmet);
+            const visor = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.2, 0.08), makeMat(0x20333b, 0.08, 0.85));
+            visor.position.set(0, 1.71, -0.42);
+            g.add(visor);
+            const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.22), makeMat(0x5b4d3b, 0.7, 0.15));
+            pack.position.set(0, 1.05, 0.28);
+            g.add(pack);
+          } else if (avatarRole === "Scientist") {
+            torsoMat = makeMat(0xe8e4d8, 0.85, 0.02);
+            addLimb(g, torsoMat, 0, 1.05, 0, 0.76, 0.95, 0.42);
+            addLimb(g, torsoMat, -0.5, 1.03, 0, 0.18, 0.78, 0.18, 0, -0.06);
+            addLimb(g, torsoMat, 0.5, 1.03, 0, 0.18, 0.78, 0.18, 0, 0.06);
+            addLimb(g, dark, -0.2, 0.42, 0, 0.22, 0.72, 0.24);
+            addLimb(g, dark, 0.2, 0.42, 0, 0.22, 0.72, 0.24);
+            addLimb(g, boot, -0.2, 0.02, -0.03, 0.28, 0.2, 0.4);
+            addLimb(g, boot, 0.2, 0.02, -0.03, 0.28, 0.2, 0.4);
+            addLowPolyHead(g, skin, null, true);
+            const collar = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.22, 4), makeMat(0xffffff, 0.8, 0));
+            collar.position.set(0, 1.5, -0.01);
+            g.add(collar);
+            const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.38, 0.035), makeMat(0x6b4b2e, 0.8, 0));
+            clipboard.position.set(-0.48, 0.76, -0.22);
+            clipboard.rotation.z = -0.35;
+            g.add(clipboard);
+          } else if (avatarRole === "Navigator") {
+            torsoMat = makeMat(0xb89b68, 0.85, 0.02);
+            addLimb(g, torsoMat, 0, 1.05, 0, 0.72, 0.9, 0.42);
+            addLimb(g, torsoMat, -0.5, 1.03, 0, 0.18, 0.75, 0.18, 0, -0.07);
+            addLimb(g, torsoMat, 0.5, 1.03, 0, 0.18, 0.75, 0.18, 0, 0.07);
+            addLimb(g, 0x5c633f ? makeMat(0x5c633f,0.9,0.02) : torsoMat, -0.21, 0.42, 0, 0.23, 0.72, 0.25);
+            addLimb(g, makeMat(0x5c633f,0.9,0.02), 0.21, 0.42, 0, 0.23, 0.72, 0.25);
+            addLimb(g, boot, -0.21, 0.02, -0.05, 0.3, 0.55, 0.42);
+            addLimb(g, boot, 0.21, 0.02, -0.05, 0.3, 0.55, 0.42);
+            addLowPolyHead(g, skin);
+            const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.16, 6), makeMat(0x6c5635,0.85,0));
+            hat.position.set(0, 0.53, 0);
+            g.add(hat);
+            const brim = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.05, 0.28), makeMat(0x6c5635,0.85,0));
+            brim.position.set(0, 0.47, -0.18);
+            g.add(brim);
+            const loupeRing = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.025, 6, 10), makeMat(0x9a8d6e,0.4,0.7));
+            loupeRing.position.set(0.18, 1.18, -0.34);
+            loupeRing.rotation.x = Math.PI / 2;
+            g.add(loupeRing);
+            const loupeHandle = addLimb(g, makeMat(0x6d6250,0.7,0), 0.25, 1.05, -0.3, 0.035, 0.28, 0.035, 0, -0.25);
+          } else if (avatarRole === "Explorer") {
+            torsoMat = makeMat(0x6e2432, 0.8, 0.02);
+            const shorts = makeMat(0x56633c, 0.85, 0.02);
+            const hair = makeMat(0xb85b2c, 0.75, 0.02);
+            addLimb(g, torsoMat, 0, 1.05, 0, 0.66, 0.72, 0.38);
+            addLimb(g, skin, -0.48, 1.05, 0, 0.16, 0.68, 0.16, 0, -0.07);
+            addLimb(g, skin, 0.48, 1.05, 0, 0.16, 0.68, 0.16, 0, 0.07);
+            addLimb(g, shorts, -0.19, 0.55, 0, 0.27, 0.42, 0.28);
+            addLimb(g, shorts, 0.19, 0.55, 0, 0.27, 0.42, 0.28);
+            addLimb(g, skin, -0.19, 0.22, 0, 0.18, 0.42, 0.2);
+            addLimb(g, skin, 0.19, 0.22, 0, 0.18, 0.42, 0.2);
+            addLimb(g, boot, -0.19, 0.02, -0.04, 0.28, 0.25, 0.4);
+            addLimb(g, boot, 0.19, 0.02, -0.04, 0.28, 0.25, 0.4);
+            addLowPolyHead(g, skin, hair);
+            const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.7, 0.22), makeMat(0x37442e,0.85,0));
+            backpack.position.set(0, 1.0, 0.28);
+            g.add(backpack);
+            const scarf = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.08), makeMat(0x8f6b38,0.85,0));
+            scarf.position.set(0.28, 1.18, -0.1);
+            scarf.rotation.z = -0.25;
+            g.add(scarf);
+          } else {
+            addLimb(g, makeMat(0x666666), 0, 1.05, 0, 0.72, 0.9, 0.42);
+            addLowPolyHead(g, skin);
+          }
+
+          g.scale.setScalar(0.92);
+          return g;
+        }
+
+        function addAvatarLabel(group, avatarRole) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 256;
+          canvas.height = 64;
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, 256, 64);
+          ctx.font = "700 26px Rajdhani";
+          ctx.fillStyle = "#e4ded1";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(avatarRole.toUpperCase(), 128, 32);
+          const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+          sprite.scale.set(2.5, 0.62, 1);
+          sprite.position.set(0, 2.45, 0);
+          group.add(sprite);
+        }
+
+        function buildPlayer() {
+          player = new THREE.Group();
+          player.position.set(0, 0, 5);
+          scene.add(player);
+          camera.position.set(0, 1.62, 0);
+          camera.rotation.order = "YXZ";
+          player.add(camera);
+        }
+
+        function ensureRemoteAvatar(id, avatarRole) {
+          if (!remoteAvatarGroup) {
+            remoteAvatarGroup = new THREE.Group();
+            scene.add(remoteAvatarGroup);
+          }
+          let avatar = remoteAvatars.get(id);
+          if (avatar && avatar.userData.role === avatarRole) return avatar;
+          if (avatar) remoteAvatarGroup.remove(avatar);
+          avatar = createRoleAvatar(avatarRole || "Engineer");
+          avatar.userData.role = avatarRole;
+          addAvatarLabel(avatar, avatarRole || "Player");
+          remoteAvatarGroup.add(avatar);
+          remoteAvatars.set(id, avatar);
+          return avatar;
+        }
+
+        function updateRemoteAvatars(players) {
+          if (!Array.isArray(players)) return;
+          const seen = new Set();
+          players.forEach((p) => {
+            if (!p || p.host || !p.id || !p.position) return;
+            seen.add(p.id);
+            const avatar = ensureRemoteAvatar(p.id, p.role);
+            avatar.position.set(p.position.x, p.position.y, p.position.z);
+            avatar.rotation.y = p.yaw || 0;
+          });
+          remoteAvatars.forEach((avatar, id) => {
+            if (!seen.has(id)) {
+              remoteAvatarGroup?.remove(avatar);
+              remoteAvatars.delete(id);
+            }
+          });
+        }
+
+        /* =========================================================
+   TEXT
+========================================================= */
+
+        function textSprite(text, position, size = 0.6, color = "#d9d0bd") {
+          const canvas = document.createElement("canvas");
+
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = 512;
+          canvas.height = 128;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          ctx.font = "700 40px Rajdhani";
+
+          ctx.fillStyle = color;
+
+          ctx.textAlign = "center";
+
+          ctx.textBaseline = "middle";
+
+          ctx.fillText(text, 256, 64);
+
+          const texture = new THREE.CanvasTexture(canvas);
+
+          texture.colorSpace = THREE.SRGBColorSpace;
+
+          const sprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: texture,
+              transparent: true,
+            }),
+          );
+
+          sprite.position.set(...position);
+
+          sprite.scale.set(size * 4, size, 1);
+
+          scene.add(sprite);
+
+          return sprite;
+        }
+
+        /* =========================================================
+   INIT
+========================================================= */
+
+        function init() {
+          scene = new THREE.Scene();
+
+          scene.background = new THREE.Color(0x070909);
+
+          scene.fog = new THREE.Fog(0x070909, 10, 30);
+
+          camera = new THREE.PerspectiveCamera(
+            70,
+            innerWidth / innerHeight,
+            0.05,
+            80,
+          );
+
+          renderer = new THREE.WebGLRenderer({
+            antialias: true,
+          });
+
+          renderer.setSize(innerWidth, innerHeight);
+
+          renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
+
+          renderer.shadowMap.enabled = true;
+
+          renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+          $("game").appendChild(renderer.domElement);
+
+          const ambient = new THREE.HemisphereLight(0x2a353b, 0x120f0c, 1.6);
+
+          scene.add(ambient);
+
+          const key = new THREE.DirectionalLight(0xd4b583, 2.2);
+
+          key.position.set(4, 8, 3);
+
+          key.castShadow = true;
+
+          scene.add(key);
+
+          buildRoom();
+
+          buildPlayer();
+
+          clock = new THREE.Clock();
+
+          setupDesktopControls();
+
+          setupMenu();
+
+          initializeHostRooms();
+
+          window.addEventListener("resize", resize);
+
+          requestAnimationFrame(loop);
+        }
+
+        /* =========================================================
+   DESKTOP CONTROLS
+========================================================= */
+
+        function setupDesktopControls() {
+          renderer.domElement.addEventListener("click", () => {
+            if (running && mode === "Desktop" && !isPhoneClient) {
+              renderer.domElement.requestPointerLock?.();
+            }
+          });
+
+          document.addEventListener("pointerlockchange", () => {
+            mouseLocked = document.pointerLockElement === renderer.domElement;
+          });
+
+          document.addEventListener("mousemove", (event) => {
+            if (!mouseLocked) return;
+
+            yaw -= event.movementX * 0.0022;
+
+            pitch -= event.movementY * 0.0018;
+
+            pitch = clamp(pitch, -1.35, 1.35);
+          });
+
+          document.addEventListener("keydown", (event) => {
+            if (
+              event.code === "ArrowLeft" ||
+              event.code === "ArrowRight" ||
+              event.code === "ArrowUp" ||
+              event.code === "ArrowDown"
+            ) {
+              event.preventDefault();
+            }
+
+            keys[event.code] = true;
+
+            // Arrow keys provide keyboard POV control in the same way as mouse look.
+            if (running && !isPhoneClient) {
+              const lookSpeed = event.shiftKey ? 0.075 : 0.045;
+              if (event.code === "ArrowLeft") yaw += lookSpeed;
+              if (event.code === "ArrowRight") yaw -= lookSpeed;
+              if (event.code === "ArrowUp") pitch += lookSpeed;
+              if (event.code === "ArrowDown") pitch -= lookSpeed;
+              pitch = clamp(pitch, -1.35, 1.35);
+            }
+
+            if (event.code === "KeyE") {
+              interact();
+            }
+
+            if (event.code === "KeyF") {
+              toggleClue();
+            }
+
+            if (event.code === "KeyV") {
+              toggleMode();
+            }
+          });
+
+          document.addEventListener("keyup", (event) => {
+            keys[event.code] = false;
+          });
+        }
+
+        /* =========================================================
+   ROOM CODES + PEER HOSTING
+========================================================= */
+
+        // Self-hosted PeerServer: the same LAN host that serves this page also
+        // provides the PeerJS signaling service. This avoids dependency on
+        // 0.peerjs.com and makes LAN testing deterministic.
+        const PEER_SERVER_CONFIG = {
+          host: window.location.hostname || "localhost",
+          port: 9000,
+          path: "/peerjs",
+          secure: false,
+          debug: 1,
+        };
+
+        function createPeer(options = {}) {
+          return new Peer({ ...PEER_SERVER_CONFIG, ...options });
+        }
+
+        function createPeerWithId(id) {
+          return new Peer(id, PEER_SERVER_CONFIG);
+        }
+
+        function generateRoomCode() {
+          const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+          let code = "";
+
+          for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+          }
+
+          return code;
+        }
+
+        function setMenuHostStatus(message) {
+          if ($("multiplayerHostText")) {
+            $("multiplayerHostText").textContent = message;
+          }
+        }
+
+        function setPhoneHostStatus(message) {
+          if ($("phoneHostText")) {
+            $("phoneHostText").textContent = message;
+          }
+        }
+
+        function initializeHostRooms() {
+          if (typeof Peer === "undefined") {
+            setMenuHostStatus("PEERJS UNAVAILABLE.");
+            setPhoneHostStatus("PEERJS UNAVAILABLE.");
+            $("connectionStatus").textContent = "PEERJS UNAVAILABLE";
+            return;
+          }
+
+          multiplayerCode = generateRoomCode();
+          phoneRoomCode = generateRoomCode();
+
+          $("hostCode").textContent = multiplayerCode;
+          $("phoneHostCode").textContent = phoneRoomCode;
+
+          setMenuHostStatus("CREATING MULTIPLAYER ROOM...");
+          setPhoneHostStatus("CREATING PHONE VR ROOM...");
+          $("connectionStatus").textContent = "CREATING ROOMS";
+
+          createMultiplayerHost(multiplayerCode);
+          createPhoneHost(phoneRoomCode);
+        }
+
+        function createMultiplayerHost(code) {
+          try {
+            if (multiplayerPeer) multiplayerPeer.destroy();
+          } catch (e) {}
+
+          multiplayerPeer = createPeerWithId(code);
+
+          multiplayerPeer.on("open", (id) => {
+            multiplayerCode = id;
+            $("hostCode").textContent = id;
+            setMenuHostStatus("MULTIPLAYER READY — GIVE THIS CODE TO FRIENDS.");
+            updateConnectionStatus();
+          });
+
+          multiplayerPeer.on("connection", (connection) => {
+            hostConnections.push(connection);
+            setupMultiplayerHostConnection(connection);
+          });
+
+          multiplayerPeer.on("error", (error) => {
+            console.error("Multiplayer peer error:", error);
+
+            if (error.type === "unavailable-id") {
+              setMenuHostStatus("CODE BUSY — GENERATING A NEW MULTIPLAYER CODE...");
+
+              setTimeout(() => {
+                multiplayerCode = generateRoomCode();
+                $("hostCode").textContent = multiplayerCode;
+                createMultiplayerHost(multiplayerCode);
+              }, 400);
+
+              return;
+            }
+
+            setMenuHostStatus("MULTIPLAYER ERROR: " + error.type + " — CHECK LOCAL PEER SERVER");
+          });
+        }
+
+        function createPhoneHost(code) {
+          try {
+            if (phonePeer) phonePeer.destroy();
+          } catch (e) {}
+
+          phonePeer = createPeerWithId(code);
+
+          phonePeer.on("open", (id) => {
+            phoneRoomCode = id;
+            $("phoneHostCode").textContent = id;
+            setPhoneHostStatus("PHONE VR READY — ENTER THIS CODE ON YOUR PHONE.");
+            updateConnectionStatus();
+          });
+
+          phonePeer.on("connection", (connection) => {
+            phoneConnection = connection;
+            setupHostConnection(connection);
+          });
+
+          phonePeer.on("error", (error) => {
+            console.error("Phone peer error:", error);
+
+            if (error.type === "unavailable-id") {
+              setPhoneHostStatus("CODE BUSY — GENERATING A NEW PHONE VR CODE...");
+
+              setTimeout(() => {
+                phoneRoomCode = generateRoomCode();
+                $("phoneHostCode").textContent = phoneRoomCode;
+                createPhoneHost(phoneRoomCode);
+              }, 400);
+
+              return;
+            }
+
+            setPhoneHostStatus("PHONE VR ERROR: " + error.type + " — CHECK LOCAL PEER SERVER");
+          });
+        }
+
+        function updateWaitingRoom(players = null, hostStarted = false) {
+          const room = $("waitingRoom");
+          const list = $("waitingRoomPlayers");
+          const status = $("waitingRoomStatus");
+          if (!room || !list || !status) return;
+
+          room.style.display = "block";
+          status.textContent = hostStarted
+            ? "GAME STARTING — ROLES ASSIGNED"
+            : "WAITING FOR HOST TO PRESS START MULTIPLAYER...";
+
+          if (Array.isArray(players)) {
+            list.innerHTML = players.map((player, index) => {
+              const name = player.host ? "HOST" : `PLAYER ${index}`;
+              const state = player.ready ? "READY" : "CONNECTING";
+              return `<div><b>${name}</b> — ${state}</div>`;
+            }).join("");
+          } else {
+            const count = hostConnections.filter(c => c && c.open).length;
+            list.innerHTML = `<div><b>HOST</b> — READY</div><div><b>FRIENDS</b> — ${count} CONNECTED</div>`;
+          }
+        }
+
+        function hideWaitingRoom() {
+          if ($("waitingRoom")) $("waitingRoom").style.display = "none";
+        }
+
+        function shuffleArray(array) {
+          const copy = [...array];
+          for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+          }
+          return copy;
+        }
+
+        function updateConnectionStatus() {
+          if (phoneConnected) {
+            $("connectionStatus").textContent = "PHONE VR LINKED";
+          } else if (hostConnections.length > 0) {
+            $("connectionStatus").textContent =
+              "MULTIPLAYER: " + hostConnections.length + " CONNECTED";
+          } else {
+            $("connectionStatus").textContent = "ROOMS READY";
+          }
+        }
+
+        /* =========================================================
+   HOST MULTIPLAYER
+========================================================= */
+
+        function hostGame() {
+          isSolo = false;
+          isMultiplayerClient = false;
+          isPhoneClient = false;
+          multiplayerStarted = false;
+
+          if (!multiplayerPeer || multiplayerPeer.destroyed) {
+            multiplayerCode = generateRoomCode();
+            $("hostCode").textContent = multiplayerCode;
+            createMultiplayerHost(multiplayerCode);
+          }
+
+          if (!phonePeer || phonePeer.destroyed) {
+            phoneRoomCode = generateRoomCode();
+            $("phoneHostCode").textContent = phoneRoomCode;
+            createPhoneHost(phoneRoomCode);
+          }
+
+          $("panel").style.display = "flex";
+          $("modeSelect").parentElement.style.display = "flex";
+          $("start").style.display = "inline-block";
+          $("host").style.display = "inline-block";
+          $("startMultiplayer").style.display = "inline-block";
+          $("joinMultiplayer").style.display = "inline-block";
+          $("multiplayerCodeInput").style.display = "inline-block";
+          $("joinPhone").style.display = "inline-block";
+          $("phoneCodeInput").style.display = "inline-block";
+          $("networkHelp").style.display = "block";
+          setMenuHostStatus("HOST READY — FRIENDS CAN JOIN THE WAITING ROOM.");
+          setPhoneHostStatus("PHONE VR READY — USE THE PHONE VR CODE ON YOUR PHONE.");
+          updateWaitingRoom();
+          toast("WAITING ROOM READY — WAIT FOR YOUR PLAYERS, THEN PRESS START MULTIPLAYER.");
+        }
+
+        function startMultiplayerGame() {
+          if (isMultiplayerClient || multiplayerStarted) return;
+
+          isSolo = false;
+          isMultiplayerClient = false;
+          isPhoneClient = false;
+
+          if (!multiplayerPeer || multiplayerPeer.destroyed) {
+            hostGame();
+            setTimeout(startMultiplayerGame, 700);
+            return;
+          }
+
+          const players = hostConnections.filter((c) => c && c.open);
+          const shuffledRoles = shuffleArray(multiplayerRoles);
+          multiplayerStarted = true;
+
+          const assignments = [
+            { connection: null, role: shuffledRoles[0], host: true },
+          ];
+
+          players.forEach((connection, index) => {
+            assignments.push({
+              connection,
+              role: shuffledRoles[(index + 1) % shuffledRoles.length],
+              host: false,
+            });
+          });
+
+          const hostAssignment = assignments[0];
+          multiplayerHostRole = hostAssignment.role;
+          role = hostAssignment.role;
+          mode = $("modeSelect").value;
+          $("role").textContent = role.toUpperCase();
+          $("mode").textContent = mode.toUpperCase();
+
+          // Give every client the same future start timestamp. This makes the
+          // cinematic/game start happen together instead of one client starting
+          // as soon as its GAME_START packet arrives.
+          const startAt = Date.now() + 1800;
+
+          assignments.slice(1).forEach((assignment) => {
+            const connection = assignment.connection;
+            if (!connection || !connection.open) return;
+
+            connection.playerRole = assignment.role;
+            connection.send({
+              type: "GAME_START",
+              role: assignment.role,
+              mode,
+              startAt,
+              playerNumber: assignments.indexOf(assignment) + 1,
+              totalPlayers: assignments.length,
+            });
+          });
+
+          $("waitingRoomStatus").textContent = "GAME STARTING FOR EVERYONE...";
+          $("waitingRoomHint").textContent = "Roles assigned. Everyone is entering the escape room together.";
+          $("panel").style.display = "none";
+          hideWaitingRoom();
+          setMenuHostStatus(
+            `MULTIPLAYER STARTING — ${assignments.length} PLAYER${assignments.length === 1 ? "" : "S"}.`,
+          );
+          toast(`ROLE ASSIGNED: ${role.toUpperCase()} — STARTING TOGETHER`);
+
+          if (multiplayerStartTimer) clearTimeout(multiplayerStartTimer);
+          const delay = Math.max(0, startAt - Date.now());
+          multiplayerStartTimer = setTimeout(() => {
+            multiplayerStartTimer = null;
+            startGame(false, { preserveRole: true, multiplayer: true });
+            broadcastGameState();
+          }, delay);
+        }
+
+        function setupMultiplayerHostConnection(connection) {
+          connection.playerId = ++multiplayerPlayerCounter;
+          connection.playerRole = null;
+          connection.playerReady = false;
+
+          connection.on("open", () => {
+            connection.playerReady = true;
+
+            connection.send({
+              type: "WAITING_ROOM",
+              hostStarted: multiplayerStarted,
+              players: getWaitingRoomPlayers(),
+              message: multiplayerStarted
+                ? "GAME ALREADY STARTED — WAIT FOR THE NEXT SESSION."
+                : "WAITING FOR HOST TO START MULTIPLAYER.",
+            });
+
+            updateWaitingRoom();
+            updateConnectionStatus();
+            toast("MULTIPLAYER PLAYER JOINED THE WAITING ROOM");
+          });
+
+          connection.on("data", (data) => {
+            if (!data) return;
+
+            if (data.type === "PLAYER_READY") {
+              connection.playerReady = true;
+              sendWaitingRoomState();
+              return;
+            }
+
+            if (data.type === "PLAYER_INPUT") {
+              // Each client has its own input state. This prevents one friend from overwriting another.
+              connection.networkInput = Object.assign(
+                connection.networkInput || {},
+                data.input || {},
+              );
+              if (data.input?.position) connection.networkPosition = data.input.position;
+              if (data.input?.yaw != null) connection.networkYaw = data.input.yaw;
+              broadcastRemotePlayers();
+              return;
+            }
+
+            if (data.type === "PLAYER_ACTION") {
+              handleRemoteInteraction(data.target || null, connection.playerRole || "ALL");
+            }
+          });
+
+          connection.on("close", () => {
+            hostConnections = hostConnections.filter((c) => c !== connection);
+            updateWaitingRoom();
+            updateConnectionStatus();
+          });
+
+          connection.on("error", (error) => {
+            console.error("Multiplayer connection error:", error);
+          });
+        }
+
+        function getWaitingRoomPlayers() {
+          return [
+            { host: true, ready: true },
+            ...hostConnections
+              .filter(c => c && c.open)
+              .map(c => ({ host: false, ready: !!c.playerReady })),
+          ];
+        }
+
+        function sendWaitingRoomState() {
+          const players = getWaitingRoomPlayers();
+          updateWaitingRoom(players, multiplayerStarted);
+          hostConnections.forEach((connection) => {
+            if (connection && connection.open && !multiplayerStarted) {
+              try {
+                connection.send({
+                  type: "WAITING_ROOM",
+                  hostStarted: false,
+                  players,
+                  message: "WAITING FOR HOST TO START MULTIPLAYER.",
+                });
+              } catch (error) {
+                console.warn("Unable to update waiting room:", error);
+              }
+            }
+          });
+        }
+
+        /* =========================================================
+   HOST CONNECTION — PHONE VR
+========================================================= */
+
+        function setupHostConnection(connection) {
+          connection.on("open", () => {
+            phoneConnected = true;
+
+            setPhoneHostStatus("PHONE CONNECTED — VR INPUT ONLINE.");
+            $("connectionStatus").textContent = "PHONE VR LINKED";
+
+            toast("PHONE VR CONNECTED");
+            sendFullState();
+          });
+
+          connection.on("data", (data) => {
+            if (!data) return;
+
+            if (data.type === "PHONE_READY") {
+              toast("PHONE READY");
+              return;
+            }
+
+            if (data.type === "PHONE_INPUT") {
+              networkInput = Object.assign(networkInput, data.input || {});
+            }
+
+            if (data.type === "PHONE_ACTION") {
+              if (data.action === "INTERACT") {
+                interact();
+              }
+
+              if (data.action === "CLUE") {
+                toggleClue();
+              }
+            }
+          });
+
+          connection.on("close", () => {
+            phoneConnected = false;
+
+            setPhoneHostStatus("PHONE DISCONNECTED — WAITING...");
+            updateConnectionStatus();
+          });
+
+          connection.on("error", (error) => {
+            console.error("Phone connection error:", error);
+            phoneConnected = false;
+            setPhoneHostStatus("PHONE CONNECTION ERROR.");
+            updateConnectionStatus();
+          });
+        }
+
+        function broadcastRemotePlayers() {
+          const now = performance.now();
+          if (now - lastRemoteBroadcast < 45) return;
+          lastRemoteBroadcast = now;
+          const players = [{
+            id: "HOST",
+            host: true,
+            role,
+            position: { x: player.position.x, y: player.position.y, z: player.position.z },
+            yaw,
+          }];
+          hostConnections.forEach((connection) => {
+            if (connection && connection.open && connection.playerRole && connection.networkPosition) {
+              players.push({
+                id: String(connection.playerId),
+                host: false,
+                role: connection.playerRole,
+                position: connection.networkPosition,
+                yaw: connection.networkYaw || 0,
+              });
+            }
+          });
+          updateRemoteAvatars(players);
+          hostConnections.forEach((connection) => {
+            if (connection && connection.open) {
+              try { connection.send({ type: "REMOTE_PLAYERS", players }); } catch (e) {}
+            }
+          });
+        }
+
+        /* =========================================================
+   SEND STATE
+========================================================= */
+
+        function getGameStatePacket() {
+          return {
+            type: "GAME_STATE",
+            running,
+            remaining,
+            role,
+            tasks: { ...tasks },
+            position: {
+              x: player.position.x,
+              y: player.position.y,
+              z: player.position.z,
+            },
+            yaw,
+            pitch,
+            doorOpen: doorLockMesh === null,
+          };
+        }
+
+        function sendFullState() {
+          const packet = getGameStatePacket();
+
+          if (phoneConnection && phoneConnection.open) {
+            phoneConnection.send(packet);
+          }
+
+          broadcastGameState();
+        }
+
+        function broadcastGameState() {
+          const packet = getGameStatePacket();
+
+          hostConnections.forEach((connection) => {
+            if (connection && connection.open) {
+              try {
+                connection.send(packet);
+              } catch (error) {
+                console.warn("Unable to send multiplayer state:", error);
+              }
+            }
+          });
+        }
+
+        function sendPhoneState(now) {
+          if (!hostConnection || !hostConnection.open || !phoneConnected)
+            return;
+
+          if (now - lastStateSend < 50) return;
+
+          lastStateSend = now;
+
+          sendFullState();
+        }
+
+        /* =========================================================
+   MULTIPLAYER JOIN
+========================================================= */
+
+        function cleanCodeInput(id) {
+          return $(id)
+            .value.trim()
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, "");
+        }
+
+        function resetClientPeers() {
+          try {
+            if (multiplayerPeer) multiplayerPeer.destroy();
+          } catch (e) {}
+
+          try {
+            if (phonePeer) phonePeer.destroy();
+          } catch (e) {}
+
+          multiplayerPeer = null;
+          phonePeer = null;
+        }
+
+        function joinMultiplayerRoom() {
+          const code = cleanCodeInput("multiplayerCodeInput");
+
+          if (code.length !== 6) {
+            $("multiplayerCodeInput").focus();
+            alert("Enter the six-character MULTIPLAYER CODE from the host.");
+            return;
+          }
+
+          isMultiplayerClient = true;
+          isPhoneClient = false;
+          isSolo = false;
+          multiplayerStarted = false;
+          roomCode = code;
+          role = "ALL";
+          mode = $("modeSelect").value;
+
+          $("panel").style.display = "flex";
+          $("role").textContent = "WAITING";
+          $("mode").textContent = mode.toUpperCase();
+          $("connectionStatus").textContent = "CONNECTING TO MULTIPLAYER";
+          $("waitingRoom").style.display = "block";
+          $("waitingRoomStatus").textContent = "CONNECTING TO HOST...";
+          $("waitingRoomPlayers").innerHTML = "";
+          $("waitingRoomHint").textContent = "Your role will be randomly assigned by the host when the game starts.";
+          $("hostCode").textContent = code;
+
+          // A joining player sees only the waiting room.
+          $("modeSelect").parentElement.style.display = "none";
+          $("start").style.display = "none";
+          $("host").style.display = "none";
+          $("startMultiplayer").style.display = "none";
+          $("joinMultiplayer").style.display = "none";
+          $("multiplayerCodeInput").style.display = "none";
+          $("joinPhone").style.display = "none";
+          $("phoneCodeInput").style.display = "none";
+          $("networkHelp").style.display = "none";
+
+          // A joining player sees only the waiting room. The escape room does NOT start here.
+          document.querySelectorAll("#menu > .buttons, #menu > .codeGrid, #menu > .joinBox, #menu > .phoneBox, #menu > #networkHelp").forEach((el) => {
+            if (el.id !== "waitingRoom") el.dataset.joinHidden = el.style.display;
+          });
+
+          resetClientPeers();
+
+          multiplayerPeer = createPeer();
+
+          multiplayerPeer.on("open", () => {
+            connectMultiplayerClient(code);
+          });
+
+          multiplayerPeer.on("error", (error) => {
+            console.error("Multiplayer client error:", error);
+            $("connectionStatus").textContent = "MULTIPLAYER ERROR — CHECK LOCAL SERVER";
+            alert("Could not join multiplayer: " + error.type);
+          });
+        }
+
+        function connectMultiplayerClient(code) {
+          const connection = multiplayerPeer.connect(code, {
+            reliable: true,
+          });
+
+          hostConnection = connection;
+
+          connection.on("open", () => {
+            $("connectionStatus").textContent = "IN MULTIPLAYER WAITING ROOM";
+            $("waitingRoomStatus").textContent = "WAITING FOR HOST TO PRESS START MULTIPLAYER...";
+            $("waitingRoomHint").textContent = "Do not choose a role. The host will randomly assign one when the game starts.";
+
+            connection.send({
+              type: "PLAYER_READY",
+            });
+          });
+
+          connection.on("data", (data) => {
+            handleMultiplayerServerData(data);
+          });
+
+          connection.on("close", () => {
+            running = false;
+            $("connectionStatus").textContent = "MULTIPLAYER DISCONNECTED";
+            $("waitingRoomStatus").textContent = "HOST DISCONNECTED";
+            toast("MULTIPLAYER HOST DISCONNECTED");
+          });
+
+          connection.on("error", (error) => {
+            console.error(error);
+            $("connectionStatus").textContent = "MULTIPLAYER CONNECTION ERROR";
+          });
+        }
+
+        function handleMultiplayerServerData(data) {
+          if (!data) return;
+
+          if (data.type === "WAITING_ROOM") {
+            if (data.hostStarted) {
+              $("waitingRoomStatus").textContent = "HOST IS STARTING THE GAME...";
+            } else {
+              $("waitingRoomStatus").textContent = data.message || "WAITING FOR HOST TO START MULTIPLAYER...";
+            }
+
+            updateWaitingRoom(data.players || [], !!data.hostStarted);
+            $("panel").style.display = "flex";
+            return;
+          }
+
+          if (data.type === "GAME_START") {
+            role = data.role || "Engineer";
+            mode = data.mode || "Desktop";
+            multiplayerStarted = true;
+            isSolo = false;
+            isMultiplayerClient = true;
+            isPhoneClient = false;
+
+            $("role").textContent = role.toUpperCase();
+            $("mode").textContent = mode.toUpperCase();
+            $("connectionStatus").textContent = `MULTIPLAYER — ${role.toUpperCase()}`;
+            $("waitingRoomStatus").textContent = "GAME STARTING FOR EVERYONE...";
+            $("waitingRoomHint").textContent = "Your randomly assigned role is locked.";
+            toast(`ROLE ASSIGNED: ${role.toUpperCase()}`);
+
+            if (multiplayerStartTimer) clearTimeout(multiplayerStartTimer);
+
+            const startAt = Number(data.startAt) || Date.now();
+            const delay = Math.max(0, startAt - Date.now());
+            multiplayerStartTimer = setTimeout(() => {
+              multiplayerStartTimer = null;
+              $("panel").style.display = "none";
+              hideWaitingRoom();
+              startGame(false, { preserveRole: true, multiplayer: true, mode });
+            }, delay);
+            return;
+          }
+
+          if (data.type === "REMOTE_PLAYERS") {
+            updateRemoteAvatars(data.players);
+            return;
+          }
+
+          if (data.type === "GAME_STATE") {
+            if (typeof data.running === "boolean") {
+              running = data.running;
+            }
+
+            if (typeof data.remaining === "number") {
+              remaining = data.remaining;
+            }
+
+            if (data.tasks) {
+              tasks = { ...tasks, ...data.tasks };
+            }
+
+            if (typeof data.yaw === "number") {
+              yaw = data.yaw;
+            }
+
+            if (typeof data.pitch === "number") {
+              pitch = data.pitch;
+            }
+
+            const minutes = Math.floor(remaining / 60);
+            const seconds = Math.floor(remaining % 60);
+
+            $("timer").textContent =
+              String(minutes).padStart(2, "0") +
+              ":" +
+              String(seconds).padStart(2, "0");
+          }
+        }
+
+        /* =========================================================
+   PHONE JOIN
+========================================================= */
+
+        function joinPhoneRoom() {
+          const code = cleanCodeInput("phoneCodeInput");
+
+          if (code.length !== 6) {
+            $("phoneCodeInput").focus();
+            alert("Enter the six-character PHONE VR CODE shown on the host.");
+            return;
+          }
+
+          isPhoneClient = true;
+          isMultiplayerClient = false;
+          roomCode = code;
+
+          $("panel").style.display = "none";
+          $("ui").style.display = "none";
+          $("phoneClient").style.display = "block";
+
+          $("phoneCodeStatus").textContent = "CONNECTING TO PHONE VR ROOM " + code;
+
+          resetClientPeers();
+
+          phonePeer = createPeer();
+
+          phonePeer.on("open", () => {
+            connectPhone(code);
+          });
+
+          phonePeer.on("error", (error) => {
+            console.error(error);
+            $("phoneCodeStatus").textContent = "NETWORK ERROR: " + error.type;
+          });
+        }
+
+        function connectPhone(code) {
+          const connection = phonePeer.connect(code, {
+            reliable: true,
+          });
+
+          phoneConnection = connection;
+
+          connection.on("open", () => {
+            $("phoneCodeStatus").textContent = "CONNECTED — PHONE VR ROOM " + code;
+
+            connection.send({
+              type: "PHONE_READY",
+
+              capabilities: {
+                webxr: !!navigator.xr,
+                orientation: "DeviceOrientationEvent" in window,
+                gamepad: !!navigator.getGamepads,
+              },
+            });
+
+            setupPhoneClient();
+          });
+
+          connection.on("data", (data) => {
+            handlePhoneServerData(data);
+          });
+
+          connection.on("close", () => {
+            $("phoneCodeStatus").textContent = "CONNECTION LOST";
+          });
+
+          connection.on("error", (error) => {
+            console.error(error);
+            $("phoneCodeStatus").textContent = "CONNECTION ERROR";
+          });
+        }
+
+        /* =========================================================
+   PHONE SERVER DATA
+========================================================= */
+
+        function handlePhoneServerData(data) {
+          if (!data) return;
+
+          if (data.type === "GAME_STATE") {
+            if (data.position) {
+              phonePosition.set(
+                data.position.x,
+                data.position.y,
+                data.position.z,
+              );
+            }
+
+            phoneYaw = data.yaw || 0;
+
+            phonePitch = data.pitch || 0;
+
+            updatePhoneHelp(data.running);
+          }
+        }
+
+        /* =========================================================
+   MULTIPLAYER INPUT
+========================================================= */
+
+        function sendMultiplayerInput() {
+          if (!isMultiplayerClient || !hostConnection || !hostConnection.open) {
+            return;
+          }
+
+          hostConnection.send({
+            type: "PLAYER_INPUT",
+            input: {
+              w: keys.KeyW,
+              s: keys.KeyS,
+              a: keys.KeyA,
+              d: keys.KeyD,
+              sprint: keys.ShiftLeft || keys.ShiftRight,
+              yaw,
+              pitch,
+              position: { x: player.position.x, y: player.position.y, z: player.position.z },
+              role,
+            },
+          });
+        }
+
+        /* =========================================================
+   PHONE INPUT
+========================================================= */
+
+        function sendPhoneInput() {
+          if (!phoneConnection || !phoneConnection.open) return;
+
+          phoneConnection.send({
+            type: "PHONE_INPUT",
+
+            input: {
+              w: phoneStick.y < -0.25,
+
+              s: phoneStick.y > 0.25,
+
+              a: phoneStick.x < -0.25,
+
+              d: phoneStick.x > 0.25,
+
+              sprint: phoneButtons.X,
+
+              yaw: phoneYaw,
+
+              pitch: phonePitch,
+            },
+          });
+        }
+
+        function phoneAction(action) {
+          if (!phoneConnection || !phoneConnection.open) return;
+
+          phoneConnection.send({
+            type: "PHONE_ACTION",
+
+            action,
+          });
+        }
+
+        /* =========================================================
+   PHONE TOUCH
+========================================================= */
+
+        function setupPhoneControls() {
+          const zone = $("stickZone");
+
+          const stick = $("stick");
+
+          let active = false;
+
+          function updateStick(clientX, clientY) {
+            const rect = zone.getBoundingClientRect();
+
+            const cx = rect.left + rect.width / 2;
+
+            const cy = rect.top + rect.height / 2;
+
+            let dx = clientX - cx;
+
+            let dy = clientY - cy;
+
+            const max = rect.width * 0.38;
+
+            const length = Math.hypot(dx, dy);
+
+            if (length > max) {
+              dx = (dx / length) * max;
+
+              dy = (dy / length) * max;
+            }
+
+            phoneStick.x = dx / max;
+
+            phoneStick.y = dy / max;
+
+            stick.style.transform = `translate(${dx}px,${dy}px)`;
+          }
+
+          function resetStick() {
+            active = false;
+
+            phoneStick.x = 0;
+            phoneStick.y = 0;
+
+            stick.style.transform = "translate(0px,0px)";
+          }
+
+          zone.addEventListener("pointerdown", (event) => {
+            active = true;
+
+            zone.setPointerCapture(event.pointerId);
+
+            updateStick(event.clientX, event.clientY);
+          });
+
+          zone.addEventListener("pointermove", (event) => {
+            if (active) {
+              updateStick(event.clientX, event.clientY);
+            }
+          });
+
+          zone.addEventListener("pointerup", resetStick);
+
+          zone.addEventListener("pointercancel", resetStick);
+
+          setupPhoneButton("phoneB1", "A", "INTERACT");
+
+          setupPhoneButton("phoneB2", "B", "CLUE");
+
+          setupPhoneButton("phoneB3", "X", null);
+
+          setupPhoneButton("phoneB4", "Y", "INTERACT");
+
+          setInterval(sendPhoneInput, 50);
+        }
+
+        function setupPhoneButton(id, button, action) {
+          const element = $(id);
+
+          element.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+
+            phoneButtons[button] = true;
+
+            if (action) {
+              phoneAction(action);
+            }
+          });
+
+          element.addEventListener("pointerup", () => {
+            phoneButtons[button] = false;
+          });
+
+          element.addEventListener("pointercancel", () => {
+            phoneButtons[button] = false;
+          });
+        }
+
+        /* =========================================================
+   DEVICE ORIENTATION
+========================================================= */
+
+        async function enableDeviceOrientation() {
+          if (typeof DeviceOrientationEvent === "undefined") {
+            updatePhoneHelp(false, "Device orientation is unavailable.");
+
+            return;
+          }
+
+          try {
+            if (
+              typeof DeviceOrientationEvent.requestPermission === "function"
+            ) {
+              const permission =
+                await DeviceOrientationEvent.requestPermission();
+
+              if (permission !== "granted") {
+                throw new Error("Orientation permission denied");
+              }
+            }
+
+            window.addEventListener(
+              "deviceorientation",
+              (event) => {
+                const alpha = event.alpha || 0;
+
+                const beta = event.beta || 0;
+
+                const gamma = event.gamma || 0;
+
+                phoneYaw = THREE.MathUtils.degToRad(alpha);
+
+                phonePitch = THREE.MathUtils.degToRad(
+                  clamp(beta - 90, -80, 80),
+                );
+
+                phoneOrientationEnabled = true;
+              },
+              true,
+            );
+
+            phoneOrientationEnabled = true;
+
+            $("phoneCodeStatus").textContent = "CONNECTED — MOTION VR ENABLED";
+          } catch (error) {
+            console.warn("Orientation unavailable:", error);
+
+            updatePhoneHelp(false, "Motion permission was not granted.");
+          }
+        }
+
+        /* =========================================================
+   GAMEPAD
+========================================================= */
+
+        function pollGamepad() {
+          if (!navigator.getGamepads) return;
+
+          const pads = navigator.getGamepads();
+
+          let found = null;
+
+          for (const p of pads) {
+            if (p) {
+              found = p;
+
+              break;
+            }
+          }
+
+          if (found) {
+            gamepad = found;
+
+            $("gamepadStatus").textContent =
+              "BLUETOOTH CONTROLLER: " + (found.id || "CONNECTED");
+
+            const x = found.axes[0] || 0;
+
+            const y = found.axes[1] || 0;
+
+            phoneStick.x = Math.abs(x) < 0.12 ? 0 : x;
+
+            phoneStick.y = Math.abs(y) < 0.12 ? 0 : y;
+
+            const a = !!found.buttons[0]?.pressed;
+
+            const b = !!found.buttons[1]?.pressed;
+
+            const xButton = !!found.buttons[2]?.pressed;
+
+            const yButton = !!found.buttons[3]?.pressed;
+
+            if (a && !phoneButtons.A) {
+              phoneAction("INTERACT");
+            }
+
+            if (b && !phoneButtons.B) {
+              phoneAction("CLUE");
+            }
+
+            phoneButtons.A = a;
+            phoneButtons.B = b;
+            phoneButtons.X = xButton;
+            phoneButtons.Y = yButton;
+          } else {
+            gamepad = null;
+
+            $("gamepadStatus").textContent =
+              "BLUETOOTH CONTROLLER: SEARCHING...";
+          }
+        }
+
+        /* =========================================================
+   WEBXR
+========================================================= */
+
+        async function setupWebXR() {
+          const container = $("xrButton");
+
+          container.innerHTML = "";
+
+          if (!navigator.xr) {
+            container.innerHTML = `<div style="
+        padding:12px;
+        background:rgba(0,0,0,.65);
+        font-size:10px;
+        text-align:center;
+      ">
+        WEBXR NOT AVAILABLE
+      </div>`;
+
+            updatePhoneHelp(
+              true,
+              "WebXR is unavailable. " +
+                "Use the device-motion display instead.",
+            );
+
+            return;
+          }
+
+          let supported = false;
+
+          try {
+            supported = await navigator.xr.isSessionSupported("immersive-vr");
+          } catch (error) {
+            console.warn(error);
+          }
+
+          if (!supported) {
+            container.innerHTML = `<div style="
+        padding:12px;
+        background:rgba(0,0,0,.65);
+        font-size:10px;
+        text-align:center;
+      ">
+        IMMERSIVE WEBXR UNAVAILABLE
+      </div>`;
+
+            updatePhoneHelp(
+              true,
+              "WebXR is not supported here. " +
+                "Device-motion VR remains available.",
+            );
+
+            return;
+          }
+
+          const button = document.createElement("button");
+
+          button.textContent = "ENTER WEBXR";
+
+          button.onclick = startWebXR;
+
+          container.appendChild(button);
+        }
+
+        async function startWebXR() {
+          if (!navigator.xr) return;
+
+          try {
+            xrSession = await navigator.xr.requestSession("immersive-vr", {
+              optionalFeatures: ["local-floor", "bounded-floor"],
+            });
+
+            phoneRenderer.xr.enabled = true;
+
+            await phoneRenderer.xr.setSession(xrSession);
+
+            $("phoneControls").style.display = "none";
+
+            $("xrButton").style.display = "none";
+
+            xrSession.addEventListener("end", () => {
+              xrSession = null;
+
+              $("phoneControls").style.display = "block";
+
+              $("xrButton").style.display = "block";
+            });
+          } catch (error) {
+            console.error(error);
+
+            $("phoneCodeStatus").textContent = "WEBXR ERROR";
+
+            updatePhoneHelp(true, error.message);
+          }
+        }
+
+        /* =========================================================
+   PHONE CLIENT
+========================================================= */
+
+        function setupPhoneClient() {
+          createPhoneWorld();
+
+          setupPhoneControls();
+
+          enableDeviceOrientation();
+        }
+
+        /* =========================================================
+   PHONE WORLD
+========================================================= */
+
+        function createPhoneWorld() {
+          phoneScene = new THREE.Scene();
+
+          phoneScene.background = new THREE.Color(0x070909);
+
+          phoneScene.fog = new THREE.Fog(0x070909, 10, 30);
+
+          phoneCamera = new THREE.PerspectiveCamera(
+            70,
+            innerWidth / innerHeight,
+            0.05,
+            80,
+          );
+
+          phoneRenderer = new THREE.WebGLRenderer({
+            canvas: $("phoneCanvas"),
+            antialias: true,
+          });
+
+          phoneRenderer.setSize(innerWidth, innerHeight);
+
+          phoneRenderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+
+          phoneRenderer.xr.enabled = true;
+
+          phoneRenderer.outputColorSpace = THREE.SRGBColorSpace;
+
+          const ambient = new THREE.HemisphereLight(0x2a353b, 0x120f0c, 1.6);
+
+          phoneScene.add(ambient);
+
+          const key = new THREE.DirectionalLight(0xd4b583, 2.2);
+
+          key.position.set(4, 8, 3);
+
+          phoneScene.add(key);
+
+          buildPhoneRoom();
+
+          setupWebXR();
+
+          phoneRenderer.setAnimationLoop(phoneRenderLoop);
+        }
+
+        /* =========================================================
+   PHONE ROOM
+========================================================= */
+
+        function buildPhoneRoom() {
+          phoneWorld.forEach((object) => phoneScene.remove(object));
+
+          phoneWorld = [];
+
+          const floor = new THREE.Mesh(
+            new THREE.CylinderGeometry(11, 11, 0.4, 16),
+            makeMat(0x181c1a),
+          );
+
+          floor.position.y = -0.2;
+
+          phoneScene.add(floor);
+
+          phoneWorld.push(floor);
+
+          const ceiling = new THREE.Mesh(
+            new THREE.CylinderGeometry(11, 11, 0.4, 16),
+            makeMat(0x0d1010),
+          );
+
+          ceiling.position.y = 5.2;
+
+          phoneScene.add(ceiling);
+
+          phoneWorld.push(ceiling);
+
+          const wallGeom = new THREE.BoxGeometry(8.4, 5, 0.4, 2, 2, 1);
+
+          for (let i = 0; i < 8; i++) {
+            if (i === 4) continue;
+
+            const angle = (i / 8) * Math.PI * 2;
+
+            const wall = new THREE.Mesh(wallGeom, makeMat(0x202523));
+
+            wall.position.set(
+              Math.sin(angle) * 10.2,
+              2.3,
+              Math.cos(angle) * 10.2,
+            );
+
+            wall.rotation.y = angle + Math.PI;
+
+            phoneScene.add(wall);
+
+            phoneWorld.push(wall);
+          }
+
+          const core = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.6, 2, 1.4, 12),
+            makeMat(0x2b302d),
+          );
+
+          core.position.set(0, 0.7, -1.2);
+
+          phoneScene.add(core);
+
+          phoneWorld.push(core);
+
+          const door = new THREE.Mesh(
+            new THREE.BoxGeometry(4.2, 4.4, 0.3, 3, 3, 1),
+            makeMat(0x0b0d0c),
+          );
+
+          door.position.set(0, 2.2, -10.1);
+
+          phoneScene.add(door);
+
+          phoneWorld.push(door);
+
+          buildPhoneStation(-5.5, 0, 0xb65f2e);
+
+          buildPhoneStation(5.5, 0, 0xd8d5cb);
+
+          buildPhoneStation(-5.5, 5, 0x416b62);
+
+          buildPhoneStation(5.5, 5, 0x657b45);
+        }
+
+        function buildPhoneStation(x, z, color) {
+          const base = new THREE.Mesh(
+            new THREE.BoxGeometry(2.4, 1.2, 1.6),
+            makeMat(0x2a2e2b),
+          );
+
+          base.position.set(x, 0.6, z);
+
+          phoneScene.add(base);
+
+          phoneWorld.push(base);
+
+          const panel = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 1, 0.15),
+            makeMat(color, 0.4, 0.5),
+          );
+
+          panel.position.set(x, 1.45, z - 0.8);
+
+          phoneScene.add(panel);
+
+          phoneWorld.push(panel);
+        }
+
+        /* =========================================================
+   PHONE RENDER LOOP
+========================================================= */
+
+        function phoneRenderLoop() {
+          pollGamepad();
+
+          if (!xrSession) {
+            phoneCamera.position.copy(phonePosition);
+
+            phoneCamera.rotation.order = "YXZ";
+
+            phoneCamera.rotation.y = phoneYaw;
+
+            phoneCamera.rotation.x = phonePitch;
+          }
+
+          phoneRenderer.render(phoneScene, phoneCamera);
+        }
+
+        /* =========================================================
+   START GAME
+========================================================= */
+
+        function startGame(solo = true, options = {}) {
+          isSolo = solo;
+
+          // In multiplayer, the host is authoritative and the role was already
+          // assigned randomly. Never overwrite it with the disabled menu value.
+          if (!(options.preserveRole && !solo)) {
+            role = solo ? "ALL" : role;
+          }
+
+          mode = options.mode || $("modeSelect").value;
+
+          $("panel").style.display = "none";
+
+          $("role").textContent = solo
+            ? "ALL ROLES (SOLO)"
+            : role.toUpperCase();
+
+          $("mode").textContent = mode.toUpperCase();
+
+          tasks = {
+            Engineer: false,
+            Scientist: false,
+            Explorer: false,
+            Navigator: false,
+          };
+
+          puzzle = {
+            engineer: [],
+            scientist: "",
+            explorer: [],
+            navigator: "",
+          };
+
+          remaining = 600;
+
+          player.position.set(0, 1.65, 5);
+
+          runOpeningCinematic(() => {
+            running = true;
+
+            lastFrame = performance.now();
+
+            showClue();
+
+            if (!isMultiplayerClient) {
+              sendFullState();
+            }
+          });
+        }
+
+        /* =========================================================
+   CINEMATIC
+========================================================= */
+
+        function runOpeningCinematic(complete) {
+          const overlay = $("cinematicOverlay");
+
+          const text = $("cinematicText");
+
+          overlay.style.display = "flex";
+
+          const sequence = [
+            "CRITICAL ALERT: CONSTELLATION STABILITY FAILING...",
+
+            "IF RESERVES ARE NOT ONLINE IN 10 MINUTES...",
+
+            "THE CONSTELLATION'S STARS WILL BLAST INTO A MEGA BLACK HOLE...",
+
+            "CONSUMING THIS ENTIRE SECTOR AND ALL CREW MEMBERS.",
+
+            "INITIALIZING SYSTEM BRIEF & TOOL TUTORIAL...",
+          ];
+
+          let index = 0;
+
+          function next() {
+            if (index < sequence.length) {
+              text.textContent = sequence[index++];
+
+              setTimeout(next, 2200);
+            } else {
+              runTutorial(complete);
+            }
+          }
+
+          next();
+        }
+
+        /* =========================================================
+   TUTORIAL
+========================================================= */
+
+        function runTutorial(complete) {
+          const overlay = $("cinematicOverlay");
+
+          const text = $("cinematicText");
+
+          overlay.style.display = "flex";
+
+          const steps = isSolo
+            ? [
+                "SINGLE PLAYER MODE: YOU HAVE ACCESS TO ALL SPECIALIST TOOLS.",
+
+                "POWER MULTIMETER — SOLVE THE ENGINEERING CONDUIT.",
+
+                "SPECTRAL SCANNER — ALIGN THE STABLE STAR READINGS.",
+
+                "TERRAIN SURVEY DECK — FOLLOW THE PRESSURE-PLATE PATH.",
+
+                "ASTRO-COMPASS — ENTER THE EMERGENCY NAVIGATION ROUTE.",
+
+                "SOLVE ALL FOUR PUZZLES TO RELEASE THE NORTH DOOR.",
+
+                "PULL THE EXTERNAL LEVER TO IGNITE THE RESERVE STAR.",
+              ]
+            : [
+                `ROLE ASSIGNED: ${role.toUpperCase()}`,
+
+                `TOOL: ${roleData[role].title}`,
+
+                "SOLVE YOUR SPECIALIST PUZZLE AND COOPERATE WITH THE OTHER ROLES.",
+
+                "ALL FOUR PUZZLES MUST BE COMPLETE BEFORE THE EXIT OPENS.",
+              ];
+
+          let index = 0;
+
+          function next() {
+            if (index < steps.length) {
+              text.textContent = steps[index++];
+
+              setTimeout(next, 2100);
+            } else {
+              overlay.style.display = "none";
+
+              complete();
+            }
+          }
+
+          next();
+        }
+
+        /* =========================================================
+   ARROW-KEY POV LOOK
+========================================================= */
+
+        function updateArrowLook(dt) {
+          if (!running || isPhoneClient) return;
+
+          const yawSpeed = 1.8;
+          const pitchSpeed = 1.5;
+
+          if (keys.ArrowLeft) yaw += yawSpeed * dt;
+          if (keys.ArrowRight) yaw -= yawSpeed * dt;
+          if (keys.ArrowUp) pitch += pitchSpeed * dt;
+          if (keys.ArrowDown) pitch -= pitchSpeed * dt;
+
+          pitch = clamp(pitch, -1.35, 1.35);
+        }
+
+        /* =========================================================
+   MOVEMENT
+========================================================= */
+
+        function move(dt) {
+          const speed = networkInput.sprint ? 5.2 : 3.2;
+
+          let forward = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+
+          let sideways = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+
+          if (hostConnection && !isMultiplayerClient) {
+            forward += (networkInput.w ? 1 : 0) - (networkInput.s ? 1 : 0);
+
+            sideways += (networkInput.d ? 1 : 0) - (networkInput.a ? 1 : 0);
+          }
+
+          const movement = new THREE.Vector3(sideways, 0, -forward);
+
+          if (movement.lengthSq() > 0) {
+            movement.normalize().multiplyScalar(speed * dt);
+
+            movement.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+            player.position.add(movement);
+          }
+
+          player.position.x = clamp(player.position.x, -8.5, 8.5);
+
+          player.position.z = clamp(player.position.z, -13.5, 8.5);
+        }
+
+        /* =========================================================
+   INTERACTION
+========================================================= */
+
+        function interact() {
+          if (!running) return;
+
+          if (isMultiplayerClient) {
+            if (hostConnection && hostConnection.open && near) {
+              hostConnection.send({
+                type: "PLAYER_ACTION",
+                action: "INTERACT",
+                playerRole: role,
+                target: {
+                  kind: near.userData.kind,
+                  role: near.userData.role || null,
+                  shape: near.userData.shape || null,
+                },
+              });
+            }
+            return;
+          }
+
+          if (near?.userData?.kind === "station") {
+            openStation(near.userData.role);
+
+            return;
+          }
+
+          if (near?.userData?.kind === "plate") {
+            stepPlate(near.userData.shape);
+
+            return;
+          }
+
+          if (near?.userData?.kind === "lever") {
+            pullLever();
+          }
+        }
+
+        function handleRemoteInteraction(target, actingRole = "ALL") {
+          if (!running || !target) return;
+
+          if (target.kind === "station" && target.role) {
+            openStation(target.role, actingRole);
+            return;
+          }
+
+          if (target.kind === "plate" && target.shape) {
+            stepPlate(target.shape, actingRole);
+            return;
+          }
+
+          if (target.kind === "lever") {
+            pullLever();
+          }
+        }
+
+        /* =========================================================
+   STATION
+========================================================= */
+
+        function openStation(stationRole, actingRole = role) {
+          if (!isSolo && stationRole !== actingRole) {
+            toast("ACCESS DENIED — NOT YOUR SPECIALIZATION.");
+
+            return;
+          }
+
+          const data = roleData[stationRole];
+
+          toast(data.task);
+
+          if (stationRole === "Engineer") {
+            const answer = prompt(
+              "ENGINEER — Enter conduit order (example: BDCA)",
+            );
+
+            if (answer) {
+              solveEngineer(answer);
+            }
+          }
+
+          if (stationRole === "Scientist") {
+            const answer = prompt("SCIENTIST — Enter 3-digit spectral order");
+
+            if (answer) {
+              solveScientist(answer);
+            }
+          }
+
+          if (stationRole === "Explorer") {
+            toast("Explorer: use the floor plates in sequence.");
+          }
+
+          if (stationRole === "Navigator") {
+            const answer = prompt("NAVIGATOR — Enter route, e.g. NESW");
+
+            if (answer) {
+              solveNavigator(answer);
+            }
+          }
+
+          checkDoorUnlock();
+        }
+
+        /* =========================================================
+   PUZZLES
+========================================================= */
+
+        function solveEngineer(answer) {
+          const cleaned = answer.replace(/[^ABCD]/gi, "").toUpperCase();
+
+          if (cleaned === "BDCA") {
+            tasks.Engineer = true;
+
+            toast("ENGINEERING LOCK ACCEPTED.");
+          } else {
+            toast("WRONG CONDUIT ORDER.");
+          }
+
+          checkDoorUnlock();
+        }
+
+        function solveScientist(answer) {
+          if (answer.trim() === "942") {
+            tasks.Scientist = true;
+
+            toast("SPECTRAL ALIGNMENT ACCEPTED.");
+          } else {
+            toast("SPECTRAL READOUT REJECTED.");
+          }
+
+          checkDoorUnlock();
+        }
+
+        function solveNavigator(answer) {
+          if (answer.trim().toUpperCase() === "NESW") {
+            tasks.Navigator = true;
+
+            toast("NAVIGATION ROUTE ACCEPTED.");
+          } else {
+            toast("ROUTE INVALID.");
+          }
+
+          checkDoorUnlock();
+        }
+
+        function stepPlate(shape, actingRole = role) {
+          if (!isSolo && actingRole !== "Explorer") {
+            toast("ONLY THE EXPLORER CAN READ THIS DECK.");
+
+            return;
+          }
+
+          const sequence = ["crescent", "triangle", "square", "hexagon"];
+
+          const index = puzzle.explorer.length;
+
+          if (shape === sequence[index]) {
+            puzzle.explorer.push(shape);
+
+            toast("SURVEY STEP " + (index + 1) + "/4 ACCEPTED.");
+
+            if (puzzle.explorer.length === 4) {
+              tasks.Explorer = true;
+
+              toast("SURVEY PATH COMPLETE.");
+
+              checkDoorUnlock();
+            }
+          } else {
+            puzzle.explorer = [];
+
+            toast("SURVEY RESET — START AGAIN.");
+          }
+        }
+
+        /* =========================================================
+   DOOR
+========================================================= */
+
+        function checkDoorUnlock() {
+          const completed = Object.values(tasks).filter(Boolean).length;
+
+          if (completed === 4 && doorLockMesh) {
+            toast("ALL FOUR PUZZLES SOLVED — DOOR UNLOCKING.");
+
+            triggerDoorUnlock();
+          }
+        }
+
+        function triggerDoorUnlock() {
+          if (!doorLockMesh) return;
+
+          let progress = 0;
+
+          function animate() {
+            progress += 0.05;
+
+            if (doorLockMesh) {
+              doorLockMesh.rotation.y += 0.2;
+
+              doorLockMesh.scale.multiplyScalar(0.95);
+            }
+
+            if (doorMesh && doorMesh.position.y < 6.5) {
+              doorMesh.position.y += 0.08;
+            }
+
+            if (progress < 3.5) {
+              requestAnimationFrame(animate);
+            } else {
+              if (doorLockMesh) {
+                scene.remove(doorLockMesh);
+
+                doorLockMesh = null;
+              }
+
+              sendFullState();
+            }
+          }
+
+          animate();
+        }
+
+        /* =========================================================
+   LEVER
+========================================================= */
+
+        function pullLever() {
+          const completed = Object.values(tasks).filter(Boolean).length;
+
+          if (completed < 4) {
+            toast("DOOR LOCK SEALED — " + completed + "/4 PUZZLES COMPLETE.");
+
+            return;
+          }
+
+          leverMesh.rotation.z = 0.6;
+
+          running = false;
+
+          toast("RESERVE STAR IGNITED — MEGA BLACK HOLE AVERTED!");
+
+          sendFullState();
+
+          setTimeout(showWinScreen, 1200);
+        }
+
+        function showWinScreen() {
+          $("panel").style.display = "flex";
+
+          $("menu").innerHTML = `
+
+    <h1>STATION SAVED</h1>
+
+    <p>
+      THE RESERVE STAR HAS BEEN IGNITED.
+      THE CONSTELLATION STABILIZED.
+      THE MEGA BLACK HOLE COLLAPSE WAS AVERTED.
+    </p>
+
+    <div class="buttons">
+
+      <button
+        class="primary"
+        onclick="location.reload()"
+      >
+        PLAY AGAIN
+      </button>
+
+    </div>
+
+  `;
+        }
+
+        /* =========================================================
+   NEAREST OBJECT
+========================================================= */
+
+        function nearest() {
+          let best = null;
+
+          let bestDistance = 2.5;
+
+          const position = new THREE.Vector3();
+
+          camera.getWorldPosition(position);
+
+          const quaternion = camera.getWorldQuaternion(new THREE.Quaternion());
+
+          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
+            quaternion,
+          );
+
+          interactive.forEach((object) => {
+            const target = object.getWorldPosition(new THREE.Vector3());
+
+            const distance = position.distanceTo(target);
+
+            const direction = target.sub(position).normalize();
+
+            if (distance < bestDistance && direction.dot(forward) > 0.2) {
+              best = object;
+
+              bestDistance = distance;
+            }
+          });
+
+          return best;
+        }
+
+        /* =========================================================
+   PROMPT
+========================================================= */
+
+        function updatePrompt() {
+          near = nearest();
+
+          const prompt = $("prompt");
+
+          if (!near) {
+            prompt.classList.remove("show");
+
+            return;
+          }
+
+          let text = "";
+
+          if (near.userData.kind === "station") {
+            text = "E: OPEN " + near.userData.role.toUpperCase() + " STATION";
+          } else if (near.userData.kind === "plate") {
+            text = "E: STEP ON " + near.userData.shape.toUpperCase();
+          } else {
+            text = "E: PULL EXTERNAL LEVER";
+          }
+
+          prompt.textContent = text;
+
+          prompt.classList.add("show");
+        }
+
+        /* =========================================================
+   CLUE
+========================================================= */
+
+        function showClue() {
+          if (isSolo) {
+            $("clueTitle").textContent = "SINGLE PLAYER BRIEF";
+
+            $("clueText").innerHTML = Object.values(roleData)
+              .map(
+                (data) => `
+            <b>${data.title}</b>
+            <br>
+            ${data.clue}
+            <br><br>
+          `,
+              )
+              .join("");
+          } else {
+            const data = roleData[role];
+
+            $("clueTitle").textContent = data.title;
+
+            $("clueText").textContent = data.clue;
+          }
+
+          $("clue").style.display = clueOpen ? "block" : "none";
+        }
+
+        function toggleClue() {
+          clueOpen = !clueOpen;
+
+          showClue();
+        }
+
+        /* =========================================================
+   TOAST
+========================================================= */
+
+        function toast(message) {
+          const element = $("toast");
+
+          element.textContent = message;
+
+          element.classList.add("on");
+
+          clearTimeout(toast.timeout);
+
+          toast.timeout = setTimeout(() => {
+            element.classList.remove("on");
+          }, 2200);
+        }
+
+        /* =========================================================
+   TIMER
+========================================================= */
+
+        function updateTimer(dt) {
+          remaining -= dt;
+
+          if (remaining <= 0) {
+            remaining = 0;
+
+            running = false;
+
+            toast("TIME EXPIRED — THE CONSTELLATION COLLAPSED.");
+
+            setTimeout(showGameOver, 1200);
+          }
+
+          const minutes = Math.floor(remaining / 60);
+
+          const seconds = Math.floor(remaining % 60);
+
+          $("timer").textContent =
+            String(minutes).padStart(2, "0") +
+            ":" +
+            String(seconds).padStart(2, "0");
+        }
+
+        function showGameOver() {
+          $("panel").style.display = "flex";
+
+          $("menu").innerHTML = `
+
+    <h1>GAME OVER</h1>
+
+    <p>
+      THE CONSTELLATION'S STARS BLASTED
+      INTO A MEGA BLACK HOLE.
+      EVERYTHING IN THE SECTOR WAS CONSUMED.
+    </p>
+
+    <div class="buttons">
+
+      <button
+        class="primary"
+        onclick="location.reload()"
+      >
+        RETRY
+      </button>
+
+    </div>
+
+  `;
+        }
+
+        /* =========================================================
+   MODE
+========================================================= */
+
+        function toggleMode() {
+          if (!running) return;
+
+          mode = mode === "Desktop" ? "VR" : "Desktop";
+
+          $("mode").textContent = mode.toUpperCase();
+
+          if (mode === "VR") {
+            toast("VR DISPLAY: USE THE PHONE ROOM CONTROLLER.");
+          }
+        }
+
+        /* =========================================================
+   PHONE HELP
+========================================================= */
+
+        function updatePhoneHelp(visible = true, text = "") {
+          const panel = $("phoneHelpPanel");
+
+          const element = $("phoneHelpText");
+
+          if (text) {
+            element.textContent = text;
+          }
+
+          panel.style.display = visible ? "flex" : "none";
+        }
+
+        /* =========================================================
+   RESIZE
+========================================================= */
+
+        function resize() {
+          if (camera && renderer) {
+            camera.aspect = innerWidth / innerHeight;
+
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(innerWidth, innerHeight);
+          }
+
+          if (phoneCamera && phoneRenderer) {
+            phoneCamera.aspect = innerWidth / innerHeight;
+
+            phoneCamera.updateProjectionMatrix();
+
+            phoneRenderer.setSize(innerWidth, innerHeight);
+          }
+        }
+
+        /* =========================================================
+   MAIN LOOP
+========================================================= */
+
+        function loop(now) {
+          requestAnimationFrame(loop);
+
+          const dt = Math.min(0.05, (now - lastFrame) / 1000);
+
+          lastFrame = now;
+
+          if (running && !isPhoneClient) {
+            updateArrowLook(dt);
+
+            /*
+       Head rotation from the phone is applied to the PC host camera.
+    */
+
+            if (phoneConnected && !isMultiplayerClient) {
+              yaw = networkInput.yaw || yaw;
+              pitch = networkInput.pitch || pitch;
+            }
+
+            move(dt);
+
+            if (!isMultiplayerClient) {
+              updateTimer(dt);
+              sendPhoneState(now);
+            } else {
+              sendMultiplayerInput();
+            }
+
+            camera.rotation.x = pitch;
+            camera.rotation.y = 0;
+            player.rotation.y = yaw;
+            updatePrompt();
+          }
+
+          renderer.render(scene, camera);
+        }
+
+        /* =========================================================
+   MENU
+========================================================= */
+
+        function setupMenu() {
+          $("start").onclick = () => {
+            $("modeSelect").parentElement.style.display = "flex";
+            $("start").style.display = "inline-block";
+            $("host").style.display = "inline-block";
+            $("startMultiplayer").style.display = "inline-block";
+            $("joinMultiplayer").style.display = "inline-block";
+            $("multiplayerCodeInput").style.display = "inline-block";
+            $("joinPhone").style.display = "inline-block";
+            $("phoneCodeInput").style.display = "inline-block";
+            $("networkHelp").style.display = "block";
+            hideWaitingRoom();
+            startGame(true);
+          };
+
+          $("host").onclick = () => {
+            hostGame();
+          };
+
+          $("startMultiplayer").onclick = () => {
+            startMultiplayerGame();
+          };
+
+          $("joinMultiplayer").onclick = () => {
+            joinMultiplayerRoom();
+          };
+
+          $("multiplayerCodeInput").addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+              joinMultiplayerRoom();
+            }
+          });
+
+          $("multiplayerCodeInput").addEventListener("input", () => {
+            $("multiplayerCodeInput").value = $("multiplayerCodeInput")
+              .value.toUpperCase()
+              .replace(/[^A-Z0-9]/g, "");
+          });
+
+          $("joinPhone").onclick = () => {
+            joinPhoneRoom();
+          };
+
+          $("phoneCodeInput").addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+              joinPhoneRoom();
+            }
+          });
+
+          $("phoneCodeInput").addEventListener("input", () => {
+            $("phoneCodeInput").value = $("phoneCodeInput")
+              .value.toUpperCase()
+              .replace(/[^A-Z0-9]/g, "");
+          });
+        }
+
+        /* =========================================================
+   GAMEPAD EVENTS
+========================================================= */
+
+        window.addEventListener("gamepadconnected", (event) => {
+          gamepad = event.gamepad;
+
+          if (isPhoneClient) {
+            $("gamepadStatus").textContent =
+              "BLUETOOTH CONTROLLER: " + event.gamepad.id;
+          }
+        });
+
+        window.addEventListener("gamepaddisconnected", () => {
+          gamepad = null;
+
+          if (isPhoneClient) {
+            $("gamepadStatus").textContent =
+              "BLUETOOTH CONTROLLER: SEARCHING...";
+          }
+        });
+
+        /* =========================================================
+   START
+========================================================= */
+
+        init();
+      })();
+    </script>
+  </body>
+</html>
