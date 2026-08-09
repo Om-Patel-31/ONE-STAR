@@ -4290,7 +4290,18 @@ player.position.x = clamp(player.position.x, -8.5, 8.5);
             }
 
             if (near?.userData?.kind === "plate") {
-              stepPlate(near.userData.shape);
+              // Floor plates require the player to physically stand on the
+              // plate and then press E. They can no longer be activated by
+              // simply looking at/clicking them from a distance.
+              const playerPos = camera.getWorldPosition(new THREE.Vector3());
+              const platePos = near.getWorldPosition(new THREE.Vector3());
+              const distance = playerPos.distanceTo(platePos);
+
+              if (distance <= 1.15) {
+                stepPlate(near.userData.shape);
+              } else {
+                toast("STEP ON THE PLATE, THEN PRESS E.");
+              }
               return;
             }
 
@@ -4310,8 +4321,9 @@ player.position.x = clamp(player.position.x, -8.5, 8.5);
               return;
             }
 
+            // Floor plates are intentionally keyboard-only: the player must
+            // physically walk onto the plate and press E.
             if (target.kind === "plate" && target.shape) {
-              stepPlate(target.shape);
               return;
             }
 
@@ -4760,7 +4772,7 @@ toast("RESERVE STAR IGNITED — THE CONSTELLATION IS STABILIZED.");
             if (near.userData.kind === "station") {
               text = "E: OPEN " + near.userData.role.toUpperCase() + " STATION";
             } else if (near.userData.kind === "plate") {
-              text = "E: STEP ON " + near.userData.shape.toUpperCase();
+              text = "E: STEP ON " + near.userData.shape.toUpperCase() + " · PRESS E";
             } else {
               text = "E: PULL EXTERNAL LEVER";
             }
