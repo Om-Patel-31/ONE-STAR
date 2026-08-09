@@ -213,7 +213,9 @@
         color: #8e9a88;
       }
 
+      /* Phone is a VR display only. Movement/actions stay on the laptop/controller. */
       #phoneControls {
+        display: none !important;
         position: absolute;
         inset: 0;
         pointer-events: none;
@@ -1177,6 +1179,7 @@ let xrSession = null;
           };
 
           let gamepad = null;
+          let gamepadPreviousButtons = [];
 
           let phoneWorld = [];
 
@@ -2893,14 +2896,8 @@ function setupMultiplayerHostConnection(connection) {
                 }
                 return;
               }
-              if (data.type === "PHONE_INPUT") {
-                networkInput = Object.assign(networkInput, data.input || {});
-                return;
-              }
-              if (data.type === "PHONE_ACTION") {
-                if (data.action === "INTERACT") interact();
-                if (data.action === "CLUE") toggleClue();
-              }
+              // Phone is display-only. Ignore legacy phone control packets.
+              if (data.type === "PHONE_INPUT" || data.type === "PHONE_ACTION") return;
             });
             connection.on("close", () => {
               if (phoneConnection !== connection) return;
@@ -3678,9 +3675,9 @@ function updatePhoneTimer() {
               if(!phoneOrientationEnabled){phoneYaw=Number(data.yaw||0);phonePitch=Number(data.pitch||0);}
               if(typeof data.doorOpen==="boolean"){phoneDoorOpen=data.doorOpen;syncPhoneDoor();}
               phoneGameStartAt=Number(data.startAt)||Date.now(); phoneRunning=false; updatePhoneTimer(); updatePhoneHelp(true,"SYNCHRONIZED WITH LAPTOP — GAME STARTING…");
-              $("phoneCodeStatus").textContent="CONNECTED · CARDBOARD STEREO · SYNCED";
+              $("phoneCodeStatus").textContent="CONNECTED · VR DISPLAY · SYNCED";
               const wait=Math.max(0,phoneGameStartAt-Date.now());
-              setTimeout(()=>{if(sessionId&&sessionId!==synchronizedSessionId)return;phoneRunning=true;phoneRemaining=600;updatePhoneTimer();updatePhoneHelp(false);$("phoneCodeStatus").textContent="SOLO GAME LIVE · CARDBOARD STEREO · SYNCED";},wait);
+              setTimeout(()=>{if(sessionId&&sessionId!==synchronizedSessionId)return;phoneRunning=true;phoneRemaining=600;updatePhoneTimer();updatePhoneHelp(false);$("phoneCodeStatus").textContent="SOLO GAME LIVE · VR DISPLAY · SYNCED";},wait);
               return;
             }
             if (data.type === "GAME_STATE") {
@@ -3751,106 +3748,22 @@ function updatePhoneTimer() {
          
 
 
+          // Phone is a display/VR client only.
+          // The physical controller and keyboard on the laptop own movement/actions.
           function setupPhoneControls() {
-            const zone = $("stickZone");
-
-            const stick = $("stick");
-
-            let active = false;
-
-            function updateStick(clientX, clientY) {
-              const rect = zone.getBoundingClientRect();
-
-              const cx = rect.left + rect.width / 2;
-
-              const cy = rect.top + rect.height / 2;
-
-              let dx = clientX - cx;
-
-              let dy = clientY - cy;
-
-              const max = rect.width * 0.38;
-
-              const length = Math.hypot(dx, dy);
-
-              if (length > max) {
-                dx = (dx / length) * max;
-
-                dy = (dy / length) * max;
-              }
-
-              phoneStick.x = dx / max;
-
-              phoneStick.y = dy / max;
-
-              stick.style.transform = `translate(${dx}px,${dy}px)`;
-            }
-
-            function resetStick() {
-              active = false;
-
-              phoneStick.x = 0;
-              phoneStick.y = 0;
-
-              stick.style.transform = "translate(0px,0px)";
-            }
-
-            zone.addEventListener("pointerdown", (event) => {
-              active = true;
-
-              zone.setPointerCapture(event.pointerId);
-
-              updateStick(event.clientX, event.clientY);
-            });
-
-            zone.addEventListener("pointermove", (event) => {
-              if (active) {
-                updateStick(event.clientX, event.clientY);
-              }
-            });
-
-            zone.addEventListener("pointerup", resetStick);
-
-            zone.addEventListener("pointercancel", resetStick);
-
-            setupPhoneButton("phoneB1", "A", "INTERACT");
-
-            setupPhoneButton("phoneB2", "B", "CLUE");
-
-            setupPhoneButton("phoneB3", "X", null);
-
-            setupPhoneButton("phoneB4", "Y", "INTERACT");
-
-            setInterval(sendPhoneInput, 50);
+            const controls = $("phoneControls");
+            if (controls) controls.style.display = "none";
+            const status = $("gamepadStatus");
+            if (status) status.textContent = "VR DISPLAY · LAPTOP CONTROLLER ACTIVE";
           }
 
-          function setupPhoneButton(id, button, action) {
-            const element = $(id);
-
-            element.addEventListener("pointerdown", (event) => {
-              event.preventDefault();
-
-              phoneButtons[button] = true;
-
-              if (action) {
-                phoneAction(action);
-              }
-            });
-
-            element.addEventListener("pointerup", () => {
-              phoneButtons[button] = false;
-            });
-
-            element.addEventListener("pointercancel", () => {
-              phoneButtons[button] = false;
-            });
-          }
-
-         
+          function sendPhoneInput() {}
+          function phoneAction(action) {}
+          function pollGamepad() {}
 
 
-                    async function enableDeviceOrientation(){
-            if(typeof DeviceOrientationEvent==="undefined"){updatePhoneHelp(true,"Device orientation unavailable. Stereo rendering still works with touch controls.");return false;}
+          async function enableDeviceOrientation(){
+            if(typeof DeviceOrientationEvent==="undefined"){updatePhoneHelp(true,"Device orientation unavailable. Stereo display remains active; use the laptop/controller for movement and actions.");return false;}
             try{
               if(typeof DeviceOrientationEvent.requestPermission==="function"){const permission=await DeviceOrientationEvent.requestPermission();if(permission!=="granted")throw new Error("Motion permission denied");}
               const zee=new THREE.Vector3(0,0,1),q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
@@ -3863,7 +3776,7 @@ function updatePhoneTimer() {
                 const e=new THREE.Euler().setFromQuaternion(phoneDeviceQuaternion,"YXZ"); phoneYaw=e.y; phonePitch=clamp(e.x,-1.35,1.35); phoneRoll=e.z;
               },true);
               $("phoneCodeStatus").textContent="CONNECTED · CARDBOARD STEREO · MOTION ACTIVE"; updatePhoneHelp(false); return true;
-            }catch(error){console.warn("Orientation unavailable:",error);updatePhoneHelp(true,"Motion permission was not granted. Stereo rendering remains active; use touch controls.");return false;}
+            }catch(error){console.warn("Orientation unavailable:",error);updatePhoneHelp(true,"Motion permission was not granted. Stereo display active. Movement and actions are controlled by the laptop.");return false;}
           }
 
 function pollGamepad() {
@@ -3993,7 +3906,7 @@ function requestPhoneFullscreen() {
             await enableDeviceOrientation();
             requestPhoneFullscreen();
             updatePhoneHelp(false);
-            $("phoneCodeStatus").textContent = "CONNECTED · CARDBOARD STEREO VR";
+            $("phoneCodeStatus").textContent = "CONNECTED · VR DISPLAY · LAPTOP CONTROLLER";
           }
 
 function createPhoneWorld() {
@@ -4036,37 +3949,34 @@ function createPhoneWorld() {
             phoneRenderer.setAnimationLoop(phoneRenderLoop);
           }
 
-          function buildPhoneRoom() {
-            phoneWorld.forEach((object) => phoneScene.remove(object));
-            phoneWorld = [];
-            const floor = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.4, 16), makeMat(0x181c1a));
-            floor.position.y = -0.2;
-            phoneScene.add(floor); phoneWorld.push(floor);
-            const ceiling = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.4, 16), makeMat(0x0d1010));
-            ceiling.position.y = 5.2;
-            phoneScene.add(ceiling); phoneWorld.push(ceiling);
-            const wallGeom = new THREE.BoxGeometry(8.4, 5, 0.4, 2, 2, 1);
-            for (let i = 0; i < 8; i++) {
-              if (i === 4) continue;
-              const angle = (i / 8) * Math.PI * 2;
-              const wall = new THREE.Mesh(wallGeom, makeMat(0x202523));
-              wall.position.set(Math.sin(angle) * 10.2, 2.3, Math.cos(angle) * 10.2);
-              wall.rotation.y = angle + Math.PI;
-              phoneScene.add(wall); phoneWorld.push(wall);
-            }
-            const core = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2, 1.4, 12), makeMat(0x2b302d));
-            core.position.set(0, 0.7, -1.2);
-            phoneScene.add(core); phoneWorld.push(core);
-            const door = new THREE.Mesh(new THREE.BoxGeometry(4.2, 4.4, 0.3, 3, 3, 1), makeMat(0x0b0d0c));
-            door.position.set(0, 2.2, -10.1);
-            phoneScene.add(door); phoneWorld.push(door);
-            phoneDoorMesh = door;
-            if (phoneDoorOpen) syncPhoneDoor();
-            buildPhoneStation(-5.5, 0, 0xb65f2e);
-            buildPhoneStation(5.5, 0, 0xd8d5cb);
-            buildPhoneStation(-5.5, 5, 0x416b62);
-            buildPhoneStation(5.5, 5, 0x657b45);
+          function phoneTextSprite(text, position, size = 0.6, color = "#d9d0bd") {
+            const canvas = document.createElement("canvas"); canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "700 40px Rajdhani"; ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, 256, 64);
+            const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+            sprite.position.set(...position); sprite.scale.set(size * 4, size, 1); phoneScene.add(sprite); phoneWorld.push(sprite); return sprite;
           }
+
+          function buildPhoneRoom() {
+            phoneWorld.forEach((object) => phoneScene.remove(object)); phoneWorld = [];
+            const floor = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.4, 16), makeMat(0x181c1a)); floor.position.y = -0.2; phoneScene.add(floor); phoneWorld.push(floor);
+            const ceiling = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.4, 16), makeMat(0x0d1010)); ceiling.position.y = 5.2; phoneScene.add(ceiling); phoneWorld.push(ceiling);
+            const wallGeom = new THREE.BoxGeometry(8.4, 5, 0.4, 2, 2, 1);
+            for (let i = 0; i < 8; i++) { if (i === 4) continue; const angle = (i / 8) * Math.PI * 2; const wall = new THREE.Mesh(wallGeom, makeMat(0x202523)); wall.position.set(Math.sin(angle)*10.2,2.3,Math.cos(angle)*10.2); wall.rotation.y=angle+Math.PI; phoneScene.add(wall); phoneWorld.push(wall); }
+            const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(9,5,0.8,2,2,1), makeMat(0x161918)); doorFrame.position.set(0,2.3,-10.2); phoneScene.add(doorFrame); phoneWorld.push(doorFrame);
+            const door = new THREE.Mesh(new THREE.BoxGeometry(4.2,4.4,0.3,3,3,1), makeMat(0x0b0d0c)); door.position.set(0,2.2,-10.1); phoneScene.add(door); phoneWorld.push(door); phoneDoorMesh=door;
+            const lock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6,0), makeMat(0xc58b45,0.3,0.8)); lock.position.set(0,2.2,-9.9); phoneScene.add(lock); phoneWorld.push(lock); if(phoneDoorOpen) lock.visible=false;
+            const leverBase = new THREE.Mesh(new THREE.BoxGeometry(0.8,1.4,0.6,2,2,1), makeMat(0x282c2a)); leverBase.position.set(0,1.2,-12.5); phoneScene.add(leverBase); phoneWorld.push(leverBase);
+            const lever = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1.4,8), makeMat(0xc58b45,0.2,0.9)); lever.position.set(0,2,-12.5); lever.rotation.z=-0.6; phoneScene.add(lever); phoneWorld.push(lever); phoneTextSprite("PRIMARY CONDUIT RELEASE",[0,2.8,-12.5],0.45);
+            const core = new THREE.Mesh(new THREE.CylinderGeometry(1.6,2,1.4,12), makeMat(0x2b302d)); core.position.set(0,0.7,-1.2); phoneScene.add(core); phoneWorld.push(core); phoneTextSprite("CENTRAL POWER CORE",[0,1.7,-1.2],0.45);
+            const stations=[["ENGINEERING",-5.5,0,0xb65f2e],["SPECTRAL LAB",5.5,0,0xd8d5cb],["SURVEY DECK",-5.5,5,0x416b62],["NAVIGATION",5.5,5,0x657b45]];
+            stations.forEach(([label,x,z,color])=>{buildPhoneStation(x,z,color); phoneTextSprite(label,[x,2.35,z],0.35);});
+            const shapes=[["crescent",-3,3,12],["triangle",-1,3,3],["square",1,3,4],["hexagon",3,3,6]];
+            shapes.forEach(([shape,x,z,segments])=>{const plate=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.75,0.12,segments),makeMat(0x444842)); plate.position.set(x,0.06,z); phoneScene.add(plate); phoneWorld.push(plate);});
+          }
+
+          
 
           function buildPhoneStation(x, z, color) {
             const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 1.6), makeMat(0x2a2e2b));
@@ -4088,7 +3998,6 @@ function createPhoneWorld() {
           }
 
           function phoneRenderLoop() {
-            pollGamepad();
             if (phoneRunning && phoneGameStartAt) {
               phoneRemaining = Math.max(0, 600 - Math.max(0, (Date.now() - phoneGameStartAt) / 1000));
               updatePhoneTimer();
@@ -4937,12 +4846,53 @@ function updatePhoneHelp(visible = true, text = "") {
             renderer.setViewport(0,0,innerWidth,innerHeight); renderer.render(scene,camera);
           }
 
+          function pollDesktopGamepad(dt) {
+            if (isPhoneClient || !navigator.getGamepads) return;
+            const pads = navigator.getGamepads();
+            let pad = null;
+            for (const candidate of pads) { if (candidate) { pad = candidate; break; } }
+            if (!pad) {
+              if (gamepad) {
+                gamepad = null; gamepadPreviousButtons = [];
+                document.body.classList.remove("gamepad-connected");
+                const status = $("gamepadStatus");
+                if (status) status.textContent = "PHYSICAL CONTROLLER: DISCONNECTED";
+              }
+              return;
+            }
+            gamepad = pad;
+            document.body.classList.add("gamepad-connected");
+            const status = $("gamepadStatus");
+            if (status) status.textContent = "PHYSICAL CONTROLLER: " + (pad.id || "CONNECTED");
+            const deadzone = (v) => Math.abs(v || 0) < 0.14 ? 0 : v;
+            const lx = deadzone(pad.axes[0]);
+            const ly = deadzone(pad.axes[1]);
+            const rx = deadzone(pad.axes[2]);
+            const ry = deadzone(pad.axes[3]);
+            keys.KeyW = ly < -0.18; keys.KeyS = ly > 0.18;
+            keys.KeyA = lx < -0.18; keys.KeyD = lx > 0.18;
+            if (running && !desktopVRSession) {
+              yaw -= rx * 2.4 * dt;
+              pitch -= ry * 1.9 * dt;
+              pitch = clamp(pitch, -1.35, 1.35);
+            }
+            const pressed = (index) => !!pad.buttons[index]?.pressed;
+            const wasPressed = (index) => !!gamepadPreviousButtons[index];
+            if (pressed(0) && !wasPressed(0)) interact();
+            if (pressed(1) && !wasPressed(1)) toggleClue();
+            if (pressed(3) && !wasPressed(3)) toggleMode();
+            keys.ShiftLeft = pressed(2); keys.ShiftRight = pressed(2);
+            gamepadPreviousButtons = pad.buttons.map((b) => !!b.pressed);
+          }
+
+
 function loop(now) {
             const dt = Math.min(0.05, (now - lastFrame) / 1000);
 
             lastFrame = now;
 
             if (running && !isPhoneClient) {
+              pollDesktopGamepad(dt);
               // In immersive VR the headset/controller drives the camera, so
               // skip the desktop look controls but keep game logic.
               if (!desktopVRSession) {
@@ -5003,22 +4953,20 @@ $("createPhoneOffer").onclick = () => createPhoneOffer();
           }
 
           window.addEventListener("gamepadconnected", (event) => {
+            if (isPhoneClient) return;
             gamepad = event.gamepad;
+            gamepadPreviousButtons = [];
             document.body.classList.add("gamepad-connected");
-
-            if (isPhoneClient) {
-              $("gamepadStatus").textContent =
-                "BLUETOOTH CONTROLLER: " + event.gamepad.id;
-            }
+            const status = $("gamepadStatus");
+            if (status) status.textContent = "PHYSICAL CONTROLLER: " + (event.gamepad.id || "CONNECTED");
           });
 
           window.addEventListener("gamepaddisconnected", () => {
             gamepad = null;
-
-            if (isPhoneClient) {
-              $("gamepadStatus").textContent =
-                "BLUETOOTH CONTROLLER: SEARCHING...";
-            }
+            gamepadPreviousButtons = [];
+            document.body.classList.remove("gamepad-connected");
+            const status = $("gamepadStatus");
+            if (status) status.textContent = isPhoneClient ? "VR DISPLAY · LAPTOP CONTROLLER ACTIVE" : "PHYSICAL CONTROLLER: DISCONNECTED";
           });
 
           init();
