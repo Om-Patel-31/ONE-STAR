@@ -5,10 +5,6 @@ ten-minute emergency scenario aboard a sealed observatory. Players must
 solve station-specific puzzles and activate the reserve star before the
 constellation collapses.
 
-## Game Photos
-
-<!-- Add screenshots here -->
-
 ## Features
 
 - Desktop gameplay with interactive first-person controls.
